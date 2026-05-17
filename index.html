@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Access Simulator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a3a5c;--blue:#2563eb;--teal:#0891b2;--green:#16a34a;
+  --yellow:#ca8a04;--red:#dc2626;--gray:#6b7280;--light:#f1f5f9;
+  --white:#fff;--border:#e2e8f0;--radius:10px;
+  --tier-top:#7c3aed;--tier-priority:#0891b2;--tier-commercial:#16a34a;--tier-open:#94a3b8;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--light);color:#1e293b;min-height:100vh}
+h1,h2,h3{font-weight:700}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* WELCOME */
+#welcome{background:linear-gradient(135deg,var(--navy) 0%,var(--teal) 100%);align-items:center;justify-content:center;padding:2rem}
+.welcome-card{background:#fff;border-radius:16px;padding:3rem;max-width:680px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.welcome-card .logo{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem}
+.welcome-card .logo svg{width:40px;height:40px}
+.welcome-card h1{font-size:1.75rem;color:var(--navy);margin-bottom:.5rem}
+.welcome-card p{color:var(--gray);margin-bottom:2rem;line-height:1.6}
+.form-group{margin-bottom:1.25rem}
+.form-group label{display:block;font-size:.85rem;font-weight:600;color:#374151;margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.04em}
+.form-group input,.form-group select{width:100%;padding:.65rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;transition:border-color .2s;outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+.specialty-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.75rem}
+.specialty-input{padding:.55rem .75rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;outline:none;width:100%}
+.specialty-input:focus{border-color:var(--blue)}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.btn{padding:.7rem 1.5rem;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-secondary{background:var(--light);color:var(--navy);border:1.5px solid var(--border)}.btn-secondary:hover{background:#e2e8f0}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#b91c1c}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#15803d}
+.btn-sm{padding:.4rem 1rem;font-size:.85rem}
+.welcome-actions{display:flex;gap:.75rem;margin-top:2rem;flex-wrap:wrap}
+.divider{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+.load-section{margin-top:1rem}
+.load-section h3{font-size:1rem;color:var(--gray);margin-bottom:.75rem}
+.load-row{display:flex;gap:.75rem;align-items:flex-end}
+.load-row .form-group{margin:0;flex:1}
+
+/* MAIN */
+#main{flex-direction:column}
+.topbar{background:var(--navy);color:#fff;padding:.85rem 1.5rem;display:flex;align-items:center;gap:1.5rem;flex-shrink:0}
+.topbar .facility-name{font-size:1.15rem;font-weight:700;flex:1}
+.topbar .period-badge{background:rgba(255,255,255,.15);border-radius:20px;padding:.3rem .9rem;font-size:.85rem;font-weight:600}
+.topbar .topbar-actions{display:flex;gap:.5rem}
+.topbar .btn-sm{font-size:.78rem;padding:.35rem .8rem}
+.main-body{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:260px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sidebar-section{padding:1rem}
+.sidebar-section h4{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gray);margin-bottom:.5rem}
+.tab-btn{display:flex;align-items:center;gap:.6rem;width:100%;padding:.6rem .75rem;border:none;background:none;border-radius:8px;cursor:pointer;font-size:.9rem;color:#374151;text-align:left;transition:all .2s;margin-bottom:2px}
+.tab-btn:hover{background:var(--light)}
+.tab-btn.active{background:#eff6ff;color:var(--blue);font-weight:600}
+.tab-btn .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.tab-btn .status-icon{margin-left:auto;font-size:.75rem}
+.sidebar-metrics{padding:1rem;border-top:1px solid var(--border)}
+.mini-metric{display:flex;justify-content:space-between;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--border)}
+.mini-metric:last-child{border-bottom:none}
+.mini-metric .label{font-size:.8rem;color:var(--gray)}
+.mini-metric .val{font-size:.85rem;font-weight:700}
+.mini-metric .val.good{color:var(--green)}.mini-metric .val.warn{color:var(--yellow)}.mini-metric .val.bad{color:var(--red)}.mini-metric .val.neutral{color:var(--navy)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem}
+.panel{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.panel-header{padding:.85rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#fafafa}
+.panel-header h3{font-size:.95rem;color:var(--navy)}
+.panel-header .subtitle{font-size:.8rem;color:var(--gray)}
+.panel-body{padding:1.25rem}
+
+/* DECISION INPUTS */
+.decisions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:1rem}
+.input-card{background:var(--light);border-radius:8px;padding:.9rem}
+.input-card label{display:block;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);margin-bottom:.5rem}
+.input-card .input-row{display:flex;align-items:center;gap:.5rem}
+.input-card input[type=range]{flex:1;accent-color:var(--blue)}
+.input-card .val-display{min-width:52px;text-align:right;font-size:.9rem;font-weight:700;color:var(--navy)}
+.input-card select{width:100%;padding:.45rem .6rem;border:1.5px solid var(--border);border-radius:6px;font-size:.9rem;background:#fff;outline:none}
+.input-card select:focus{border-color:var(--blue)}
+.input-card .toggle-row{display:flex;align-items:center;justify-content:space-between}
+.toggle{position:relative;display:inline-block;width:44px;height:24px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:24px;transition:.3s}
+.toggle-slider:before{position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--blue)}
+.toggle input:checked+.toggle-slider:before{transform:translateX(20px)}
+.section-divider{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--teal);padding:.25rem 0;border-bottom:2px solid var(--teal);margin:1.1rem 0 .75rem}
+.pct-sum{font-size:.78rem;padding:.3rem .6rem;border-radius:6px;margin-top:.5rem;display:inline-block}
+.pct-sum.ok{background:#dcfce7;color:var(--green)}.pct-sum.err{background:#fee2e2;color:var(--red)}
+.global-notice{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.75rem 1rem;font-size:.85rem;color:#1d4ed8;display:flex;align-items:center;gap:.5rem;margin-bottom:1rem}
+
+/* ─── WATERFALL TEMPLATE ─── */
+.waterfall-wrap{background:var(--light);border-radius:10px;padding:1.1rem;margin-bottom:1rem}
+.waterfall-label-row{display:flex;gap:2px;margin-bottom:.4rem}
+.wf-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;flex:1;text-align:center}
+.waterfall-bar{display:flex;height:32px;border-radius:8px;overflow:hidden;gap:2px}
+.wf-seg{display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff;transition:flex .3s;min-width:0;position:relative;cursor:default}
+.wf-seg span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+.wf-seg.top-tier{background:var(--tier-top)}
+.wf-seg.priority{background:var(--tier-priority)}
+.wf-seg.commercial{background:var(--tier-commercial)}
+.wf-seg.open-access{background:var(--tier-open)}
+.waterfall-slot-row{display:flex;gap:2px;margin-top:.35rem}
+.wf-slot-info{flex:1;text-align:center;font-size:.72rem;color:#64748b}
+.waterfall-cascade{margin-top:.85rem;display:flex;gap:.5rem;flex-wrap:wrap}
+.cascade-arrow{font-size:.8rem;color:#64748b;display:flex;align-items:center;gap:.25rem;background:#fff;border:1px solid var(--border);border-radius:6px;padding:.3rem .6rem}
+.cascade-arrow.active{color:var(--blue);border-color:#bfdbfe;background:#eff6ff}
+.wf-overflow-err{font-size:.78rem;color:var(--red);margin-top:.4rem;padding:.3rem .6rem;background:#fee2e2;border-radius:6px;display:inline-block}
+.wf-sum-ok{font-size:.78rem;color:var(--green);margin-top:.4rem;padding:.3rem .6rem;background:#dcfce7;border-radius:6px;display:inline-block}
+
+/* FILL-RATE BARS inside results */
+.fill-bar-wrap{margin-top:.5rem}
+.fill-bar-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem}
+.fill-bar-row .fb-label{font-size:.72rem;width:90px;flex-shrink:0;color:#64748b}
+.fill-bar-row .fb-track{flex:1;height:10px;background:#e2e8f0;border-radius:5px;overflow:hidden}
+.fill-bar-row .fb-fill{height:100%;border-radius:5px;transition:width .5s}
+.fill-bar-row .fb-val{font-size:.72rem;font-weight:700;width:38px;text-align:right;flex-shrink:0}
+
+/* METRICS DASHBOARD */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:1rem}
+.metric-card{border-radius:10px;padding:1rem;border:1.5px solid var(--border);display:flex;flex-direction:column;gap:.3rem;transition:transform .2s}
+.metric-card:hover{transform:translateY(-2px)}
+.metric-card .m-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--gray)}
+.metric-card .m-value{font-size:1.55rem;font-weight:800}
+.metric-card .m-target{font-size:.75rem;color:var(--gray)}
+.metric-card.green{border-color:#bbf7d0;background:#f0fdf4}.metric-card.green .m-value{color:var(--green)}
+.metric-card.yellow{border-color:#fef08a;background:#fefce8}.metric-card.yellow .m-value{color:var(--yellow)}
+.metric-card.red{border-color:#fecaca;background:#fff1f2}.metric-card.red .m-value{color:var(--red)}
+.metric-card.neutral{border-color:var(--border);background:#fafafa}.metric-card.neutral .m-value{color:var(--navy)}
+.metric-card.purple{border-color:#e9d5ff;background:#faf5ff}.metric-card.purple .m-value{color:#7c3aed}
+
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.chart-container{position:relative;height:200px}
+
+/* HISTORY TABLE */
+.history-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.history-table th{background:#f8fafc;padding:.55rem .8rem;text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);border-bottom:2px solid var(--border);white-space:nowrap}
+.history-table td{padding:.55rem .8rem;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+.history-table tr:hover td{background:#f8fafc}
+.badge{display:inline-block;padding:.2rem .5rem;border-radius:20px;font-size:.72rem;font-weight:700}
+.badge.green{background:#dcfce7;color:var(--green)}.badge.yellow{background:#fef9c3;color:var(--yellow)}.badge.red{background:#fee2e2;color:var(--red)}.badge.purple{background:#f3e8ff;color:#7c3aed}
+
+/* RUN BAR */
+.run-bar{background:#fff;border-top:2px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;gap:1rem;flex-shrink:0}
+.run-bar .run-info{flex:1;font-size:.9rem;color:var(--gray)}
+.run-bar .run-info strong{color:var(--navy)}
+
+/* RESULTS OVERLAY */
+#results-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:100;overflow-y:auto;padding:2rem}
+#results-overlay.active{display:flex;align-items:flex-start;justify-content:center}
+.results-modal{background:#fff;border-radius:16px;max-width:960px;width:100%;overflow:hidden}
+.results-modal .modal-header{background:var(--navy);color:#fff;padding:1.5rem;display:flex;align-items:center;justify-content:space-between}
+.results-modal .modal-header h2{font-size:1.25rem}
+.results-modal .modal-body{padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem}
+.results-modal .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.75rem}
+
+.scorecard{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+.scorecard-item{border-radius:10px;padding:.9rem;text-align:center}
+.scorecard-item .sc-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);margin-bottom:.25rem}
+.scorecard-item .sc-val{font-size:1.65rem;font-weight:800;margin-bottom:.15rem}
+.scorecard-item .sc-target{font-size:.72rem;color:var(--gray)}
+.scorecard-item.pass{background:#f0fdf4;border:1.5px solid #bbf7d0}.scorecard-item.pass .sc-val{color:var(--green)}
+.scorecard-item.fail{background:#fff1f2;border:1.5px solid #fecaca}.scorecard-item.fail .sc-val{color:var(--red)}
+.scorecard-item.warn{background:#fefce8;border:1.5px solid #fef08a}.scorecard-item.warn .sc-val{color:var(--yellow)}
+.scorecard-item.purple{background:#faf5ff;border:1.5px solid #e9d5ff}.scorecard-item.purple .sc-val{color:#7c3aed}
+
+.specialty-summary{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:.5rem}
+.specialty-summary .ss-head{background:#f8fafc;padding:.6rem 1rem;font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
+.specialty-summary .ss-body{display:grid;grid-template-columns:repeat(5,1fr);gap:0}
+.ss-metric{padding:.6rem .9rem;border-right:1px solid var(--border);border-top:1px solid var(--border)}
+.ss-metric:last-child{border-right:none}
+.ss-metric .sml{font-size:.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:.04em}
+.ss-metric .smv{font-size:.95rem;font-weight:700;margin-top:.15rem}
+
+/* WATERFALL RESULT TIER TABLE */
+.tier-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.5rem}
+.tier-table th{padding:.45rem .75rem;text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--gray);border-bottom:2px solid var(--border);background:#fafafa}
+.tier-table td{padding:.5rem .75rem;border-bottom:1px solid var(--border)}
+.tier-table .tier-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:.4rem;vertical-align:middle}
+
+/* TIPS */
+.tip-list{display:flex;flex-direction:column;gap:.5rem}
+.tip{display:flex;gap:.5rem;align-items:flex-start;padding:.6rem .75rem;border-radius:8px;font-size:.84rem;line-height:1.4}
+.tip.tip-warn{background:#fefce8;color:#713f12}.tip.tip-err{background:#fff1f2;color:#7f1d1d}.tip.tip-ok{background:#f0fdf4;color:#14532d}
+.tip .tip-icon{font-size:1rem;flex-shrink:0;margin-top:.05rem}
+
+/* SAVE/CONFIRM MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:2rem;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-box h3{margin-bottom:1rem;font-size:1.1rem}
+.passcode-input{display:flex;gap:.5rem;margin:1rem 0}
+.passcode-input input{width:60px;height:60px;text-align:center;font-size:1.5rem;font-weight:700;border:2px solid var(--border);border-radius:8px;outline:none;transition:border-color .2s}
+.passcode-input input:focus{border-color:var(--blue)}
+.modal-actions{display:flex;gap:.75rem;margin-top:1rem}
+.status-msg{font-size:.85rem;margin-top:.5rem;min-height:1.2em}
+.status-msg.ok{color:var(--green)}.status-msg.err{color:var(--red)}
+
+[data-tip]{position:relative;cursor:help}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;font-size:.73rem;padding:.4rem .7rem;border-radius:6px;white-space:nowrap;z-index:50;pointer-events:none;max-width:240px;white-space:normal;text-align:center}
+
+@keyframes slideIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:slideIn .35s ease}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+@media(max-width:768px){.main-body{flex-direction:column}.sidebar{width:100%;max-height:200px}.chart-row{grid-template-columns:1fr}.scorecard{grid-template-columns:1fr 1fr}.decisions-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════ WELCOME -->
+<div id="welcome" class="screen active">
+<div class="welcome-card animate-in">
+  <div class="logo">
+    <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="10" fill="#1a3a5c"/><path d="M20 8v24M8 20h24" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><circle cx="20" cy="20" r="10" stroke="#0891b2" stroke-width="2"/></svg>
+    <span style="font-size:1.2rem;font-weight:800;color:var(--navy)">Patient Access Simulator</span>
+  </div>
+  <h1>Configure Your Outpatient Facility</h1>
+  <p>Model patient access operations across up to 10 specialty clinics. Run monthly or quarterly simulations and optimize scheduling for timely, equitable care.</p>
+  <div class="row-2">
+    <div class="form-group">
+      <label>Facility Name</label>
+      <input type="text" id="w-facility-name" placeholder="e.g., Riverside Medical Center" maxlength="60">
+    </div>
+    <div class="form-group">
+      <label>Simulation Periods</label>
+      <select id="w-period-type">
+        <option value="monthly">Monthly</option>
+        <option value="quarterly">Quarterly</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Number of Specialty Clinics</label>
+    <select id="w-num-specialties" onchange="buildSpecialtyInputs()">
+      <option value="1">1 Clinic</option><option value="2">2 Clinics</option>
+      <option value="3" selected>3 Clinics</option><option value="4">4 Clinics</option>
+      <option value="5">5 Clinics</option><option value="6">6 Clinics</option>
+      <option value="7">7 Clinics</option><option value="8">8 Clinics</option>
+      <option value="9">9 Clinics</option><option value="10">10 Clinics</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Specialty Names</label>
+    <div class="specialty-grid" id="specialty-name-grid"></div>
+  </div>
+  <div class="welcome-actions">
+    <button class="btn btn-primary" onclick="startNewSim()">▶ Start New Simulation</button>
+  </div>
+  <hr class="divider">
+  <div class="load-section">
+    <h3>Resume a Saved Simulation</h3>
+    <div class="load-row">
+      <div class="form-group">
+        <label>4-Digit Passcode</label>
+        <input type="text" id="w-load-code" maxlength="4" placeholder="0000" style="letter-spacing:.3em;font-size:1.2rem;text-align:center">
+      </div>
+      <button class="btn btn-secondary" onclick="loadSim()">Load →</button>
+    </div>
+    <div id="load-status" class="status-msg"></div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════ MAIN SIM -->
+<div id="main" class="screen">
+  <div class="topbar">
+    <div class="facility-name" id="topbar-facility">Facility</div>
+    <div class="period-badge" id="topbar-period">Period 1</div>
+    <div class="topbar-actions">
+      <button class="btn btn-secondary btn-sm" onclick="openSaveModal()">💾 Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="confirmRestart()">↺ Restart</button>
+    </div>
+  </div>
+  <div class="main-body">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h4>Clinics</h4>
+        <div id="tab-nav"></div>
+      </div>
+      <div class="sidebar-metrics" id="sidebar-metrics-area"></div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div class="content" id="main-content"></div>
+      <div class="run-bar">
+        <div class="run-info"><strong id="run-period-label">Period 1</strong> — Set your decisions above, then run the period.</div>
+        <button class="btn btn-success" onclick="runPeriod()">▶ Run Period</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ RESULTS -->
+<div id="results-overlay">
+  <div class="results-modal animate-in">
+    <div class="modal-header">
+      <h2 id="results-title">Period Results</h2>
+      <button onclick="closeResults()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:.3rem .7rem;cursor:pointer;font-size:1rem">✕</button>
+    </div>
+    <div class="modal-body" id="results-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeResults()">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ SAVE MODAL -->
+<div id="save-modal" class="modal-overlay">
+  <div class="modal-box animate-in">
+    <h3>💾 Save Simulation</h3>
+    <p style="font-size:.9rem;color:var(--gray)">Choose a 4-digit passcode to resume later.</p>
+    <div class="passcode-input" id="save-passcode-inputs">
+      <input type="text" maxlength="1" inputmode="numeric">
+      <input type="text" maxlength="1" inputmode="numeric">
+      <input type="text" maxlength="1" inputmode="numeric">
+      <input type="text" maxlength="1" inputmode="numeric">
+    </div>
+    <div id="save-status" class="status-msg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeSaveModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ CONFIRM MODAL -->
+<div id="confirm-modal" class="modal-overlay">
+  <div class="modal-box animate-in">
+    <h3 id="confirm-title">Confirm</h3>
+    <p id="confirm-msg" style="font-size:.9rem;color:var(--gray);margin-top:.5rem"></p>
+    <div class="modal-actions" style="margin-top:1.5rem">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════ CONSTANTS
+const WORKING_DAYS = { monthly: 22, quarterly: 66 };
+const SPECIALTY_DEFAULTS = ['Cardiology','Orthopedics','Neurology','Oncology','Gastroenterology','Pulmonology','Endocrinology','Rheumatology','Urology','Dermatology'];
+const COLORS = ['#2563eb','#0891b2','#16a34a','#9333ea','#ea580c','#dc2626','#ca8a04','#db2777','#059669','#7c3aed'];
+
+const TARGETS = {
+  tnaMax: 14, medianLeadMax: 14, medianLagMax: 3,
+  pctWithin14: 90, pctWithin3: 70,
+  commercialMin: 50, newPtMin: 25,
+  radiologyWaitMax: 5, labTATMax: 2, procedureWaitMax: 14,
+  satisfactionMin: 80, noShowMax: 10,
+};
+
+// Tier colors & labels
+const TIERS = {
+  topTier:    { color:'#7c3aed', label:'Top Tier',    short:'TT' },
+  priority:   { color:'#0891b2', label:'Priority',    short:'PR' },
+  commercial: { color:'#16a34a', label:'Commercial',  short:'CM' },
+  open:       { color:'#94a3b8', label:'Open Access', short:'OA' },
+};
+
+// ══════════════════════════════════════════════ STATE
+let state = null;
+let charts = {};
+
+function defaultGlobal() {
+  return {
+    // Market demand
+    demandVolume: 100,
+    localPct: 50, regionalPct: 30, nationalPct: 15, internationalPct: 5,
+    commercialPct: 45, governmentPct: 45, selfPayPct: 10,
+    // Operations
+    providers: 3, slotsPerDay: 16, newPatientTargetPct: 30,
+    overtimeAllowed: false, templateEfficiency: 85,
+    // ── Waterfall template tiers ──
+    topTierPct: 10,            // % of template reserved for top-tier indications
+    priorityPct: 15,           // % reserved for priority relationships
+    commercialReservedPct: 25, // % reserved for commercial payer
+    // open access = 100 - sum of above (auto-calculated)
+    releaseUnusedSlots: true,  // unfilled tier slots cascade to next tier before close
+    topTierCascades: true,     // top-tier patients may fill priority/commercial slots
+    // Downstream
+    radiologyAllocation: 80, labCapacity: 90, procedureSlots: 15,
+  };
+}
+
+function defaultSpecialty(name, idx) {
+  return { name, color: COLORS[idx % COLORS.length], useGlobal: true, overrides: {} };
+}
+
+// ══════════════════════════════════════════════ WELCOME
+function buildSpecialtyInputs() {
+  const n = parseInt(document.getElementById('w-num-specialties').value);
+  const grid = document.getElementById('specialty-name-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const inp = document.createElement('input');
+    inp.className = 'specialty-input';
+    inp.placeholder = SPECIALTY_DEFAULTS[i] || `Specialty ${i+1}`;
+    inp.id = `sp-name-${i}`;
+    grid.appendChild(inp);
+  }
+}
+
+function startNewSim() {
+  const facilityName = document.getElementById('w-facility-name').value.trim() || 'My Outpatient Center';
+  const periodType = document.getElementById('w-period-type').value;
+  const n = parseInt(document.getElementById('w-num-specialties').value);
+  const specialties = [];
+  for (let i = 0; i < n; i++) {
+    const inp = document.getElementById(`sp-name-${i}`);
+    const name = (inp && inp.value.trim()) || (SPECIALTY_DEFAULTS[i] || `Specialty ${i+1}`);
+    specialties.push(defaultSpecialty(name, i));
+  }
+  state = {
+    facility: { name: facilityName, periodType, startYear: 2025 },
+    globalSettings: defaultGlobal(),
+    specialties,
+    currentPeriod: 1,
+    activeTab: 'global',
+    history: [],
+    backlogs: specialties.map(() => 0),
+  };
+  showScreen('main');
+  renderMain();
+}
+
+function loadSim() {
+  const code = document.getElementById('w-load-code').value.trim();
+  if (!/^\d{4}$/.test(code)) { showLoadStatus('Enter a valid 4-digit code.','err'); return; }
+  const saved = localStorage.getItem(`pas_${code}`);
+  if (!saved) { showLoadStatus('No simulation found for this code.','err'); return; }
+  state = JSON.parse(saved);
+  showLoadStatus('Loaded!','ok');
+  setTimeout(() => { showScreen('main'); renderMain(); }, 500);
+}
+
+function showLoadStatus(msg, type) {
+  const el = document.getElementById('load-status');
+  el.textContent = msg; el.className = 'status-msg '+type;
+}
+
+// ══════════════════════════════════════════════ MAIN UI
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function renderMain() {
+  if (!state) return;
+  document.getElementById('topbar-facility').textContent = state.facility.name;
+  document.getElementById('topbar-period').textContent = periodLabel(state.currentPeriod);
+  document.getElementById('run-period-label').textContent = periodLabel(state.currentPeriod);
+  renderTabNav();
+  renderContent();
+  renderSidebarMetrics();
+}
+
+function periodLabel(n) {
+  if (state.facility.periodType === 'monthly') {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[(n-1)%12]} ${state.facility.startYear + Math.floor((n-1)/12)}`;
+  }
+  return `Q${((n-1)%4)+1} ${state.facility.startYear + Math.floor((n-1)/4)}`;
+}
+
+function renderTabNav() {
+  const nav = document.getElementById('tab-nav');
+  nav.innerHTML = '';
+  const gb = el('button','tab-btn'+(state.activeTab==='global'?' active':''));
+  gb.innerHTML = `<span class="dot" style="background:#64748b"></span>Global Settings`;
+  gb.onclick = () => { state.activeTab='global'; renderMain(); };
+  nav.appendChild(gb);
+  state.specialties.forEach((sp, i) => {
+    const btn = el('button','tab-btn'+(state.activeTab===i?' active':''));
+    const last = getLastResult(i);
+    const icon = last ? (quickScore(last)>=4?'✅':quickScore(last)>=2?'⚠️':'❌') : '';
+    btn.innerHTML = `<span class="dot" style="background:${sp.color}"></span>${sp.name}<span class="status-icon">${icon}</span>`;
+    btn.onclick = () => { state.activeTab=i; renderMain(); };
+    nav.appendChild(btn);
+  });
+}
+
+function getLastResult(spIdx) {
+  if (!state.history.length) return null;
+  return state.history[state.history.length-1].specialties[spIdx];
+}
+
+function quickScore(r) {
+  let s=0;
+  if(r.tna<=TARGETS.tnaMax)s++;
+  if(r.medianLeadTime<=TARGETS.medianLeadMax)s++;
+  if(r.commercialPct>=TARGETS.commercialMin)s++;
+  if(r.newPatientPct>=TARGETS.newPtMin)s++;
+  if(r.satisfaction>=TARGETS.satisfactionMin)s++;
+  return s;
+}
+
+function renderSidebarMetrics() {
+  const el2 = document.getElementById('sidebar-metrics-area');
+  if (!state.history.length) { el2.innerHTML=''; return; }
+  const a = state.history[state.history.length-1].aggregate;
+  el2.innerHTML = `
+    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gray);margin-bottom:.5rem">Last Period</div>
+    ${mm('TNA (avg)', a.tna.toFixed(1)+'d', a.tna<=TARGETS.tnaMax?'good':a.tna<=21?'warn':'bad')}
+    ${mm('Median Lead', a.medianLeadTime.toFixed(1)+'d', a.medianLeadTime<=TARGETS.medianLeadMax?'good':a.medianLeadTime<=21?'warn':'bad')}
+    ${mm('Date Lag', '±'+a.medianRequestedDateLag.toFixed(1)+'d', a.medianRequestedDateLag<=TARGETS.medianLagMax?'good':a.medianRequestedDateLag<=7?'warn':'bad')}
+    ${mm('Commercial', a.commercialPct.toFixed(0)+'%', a.commercialPct>=TARGETS.commercialMin?'good':a.commercialPct>=40?'warn':'bad')}
+    ${mm('New Patients', a.newPatientPct.toFixed(0)+'%', a.newPatientPct>=TARGETS.newPtMin?'good':a.newPatientPct>=15?'warn':'bad')}
+    ${mm('Revenue', '$'+fmtNum(a.revenue), 'neutral')}`;
+}
+
+function mm(label,val,cls) {
+  return `<div class="mini-metric"><span class="label">${label}</span><span class="val ${cls}">${val}</span></div>`;
+}
+
+function renderContent() {
+  const content = document.getElementById('main-content');
+  content.innerHTML = '';
+  if (state.activeTab === 'global') {
+    content.appendChild(renderGlobalPanel());
+  } else {
+    content.appendChild(renderSpecialtyPanel(state.activeTab));
+  }
+  if (state.history.length > 0) content.appendChild(renderHistoryPanel());
+}
+
+// ══════════════════════════════════════════════ GLOBAL PANEL
+function renderGlobalPanel() {
+  const g = state.globalSettings;
+  const panel = createPanel('Global Settings', 'Defaults applied to all clinics unless overridden per-specialty.');
+  const body = panel.querySelector('.panel-body');
+  body.innerHTML = `
+    <div class="global-notice">ℹ️ Settings here apply to all specialties using "Global" mode.</div>
+
+    <div class="section-divider">📊 Market Demand</div>
+    <div class="decisions-grid">
+      ${sliderCard('demandVolume','global','Demand Index','50','200','1',g.demandVolume,'','Overall demand level. 100 = baseline.')}
+    </div>
+
+    <div style="margin:1rem 0">
+      <div class="section-divider">🌍 Patient Geography Mix</div>
+      <div class="decisions-grid" style="margin-bottom:.5rem">
+        ${sliderCard('localPct','global','Local (%)','0','100','5',g.localPct,'%','Metro-area patients — highest booking conversion')}
+        ${sliderCard('regionalPct','global','Regional (%)','0','100','5',g.regionalPct,'%','State / regional referrals')}
+        ${sliderCard('nationalPct','global','National (%)','0','100','5',g.nationalPct,'%','Out-of-state — often new patients, complex cases')}
+        ${sliderCard('internationalPct','global','International (%)','0','100','5',g.internationalPct,'%','International patients — high revenue, lower volume')}
+      </div>
+      <div id="geo-sum" class="pct-sum">${geoSum(g)}% total (must = 100%)</div>
+    </div>
+
+    <div style="margin:1rem 0">
+      <div class="section-divider">💳 Payer Mix (Demand Pool)</div>
+      <div class="decisions-grid" style="margin-bottom:.5rem">
+        ${sliderCard('commercialPct','global','Commercial (%)','0','100','5',g.commercialPct,'%','Private insurance patients in demand pool')}
+        ${sliderCard('governmentPct','global','Government (%)','0','100','5',g.governmentPct,'%','Medicare / Medicaid patients in demand pool')}
+        ${sliderCard('selfPayPct','global','Self-Pay (%)','0','100','5',g.selfPayPct,'%','Uninsured / self-pay patients in demand pool')}
+      </div>
+      <div id="payer-sum" class="pct-sum">${payerSum(g)}% total (must = 100%)</div>
+    </div>
+
+    <div class="section-divider">🏥 Clinic Operations (Default)</div>
+    <div class="decisions-grid">
+      ${sliderCard('providers','global','Providers (FTE)','0.5','10','0.5',g.providers,'FTE','Physician / APP full-time equivalents')}
+      ${selectCard('slotsPerDay','global','Daily Template',['8','12','16','20','24','28'],g.slotsPerDay,'Appointment slots per provider per day')}
+      ${sliderCard('newPatientTargetPct','global','New Pt Target (%)','10','60','5',g.newPatientTargetPct,'%','% of schedule reserved for new patient slots')}
+      ${sliderCard('templateEfficiency','global','Template Fill (%)','60','100','5',g.templateEfficiency,'%','% of template slots that actually get scheduled')}
+      ${toggleCard('overtimeAllowed','global','Allow Overtime',g.overtimeAllowed,'Adds ~18% extra capacity at premium cost')}
+    </div>
+
+    <div class="section-divider">🎯 Template Waterfall — Slot Tier Allocation</div>
+    ${waterfallInputs('global', g)}
+
+    <div class="section-divider">🔬 Downstream Capacity</div>
+    <div class="decisions-grid">
+      ${sliderCard('radiologyAllocation','global','Radiology Slots','20','200','10',g.radiologyAllocation,'slots','Imaging slots per period per specialty')}
+      ${sliderCard('labCapacity','global','Lab Capacity (%)','50','150','10',g.labCapacity,'%','Lab processing capacity vs demand (100%=breakeven)')}
+      ${sliderCard('procedureSlots','global','Procedure Slots','5','80','5',g.procedureSlots,'slots','Treatment/procedure slots per specialty per period')}
+    </div>
+  `;
+  updatePctSums('global');
+  updateWaterfallViz('global', g);
+  return panel;
+}
+
+// ══════════════════════════════════════════════ SPECIALTY PANEL
+function renderSpecialtyPanel(i) {
+  const sp = state.specialties[i];
+  const eff = sp.useGlobal ? state.globalSettings : { ...state.globalSettings, ...sp.overrides };
+  const panel = createPanel(`${sp.name} — Decisions`, sp.useGlobal ? 'Using Global Settings.' : 'Custom settings active.');
+  const body = panel.querySelector('.panel-body');
+  const scope = `sp${i}`;
+  const disabled = sp.useGlobal ? 'style="opacity:.45;pointer-events:none"' : '';
+
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;padding:.75rem;background:${sp.useGlobal?'#eff6ff':'#fefce8'};border-radius:8px;border:1px solid ${sp.useGlobal?'#bfdbfe':'#fef08a'}">
+      <label class="toggle"><input type="checkbox" ${sp.useGlobal?'checked':''} onchange="toggleGlobalMode(${i},this.checked)"><span class="toggle-slider"></span></label>
+      <span style="font-size:.9rem;font-weight:600">${sp.useGlobal?'🌐 Using Global Settings':'⚙️ Custom Settings Active'}</span>
+      <span style="font-size:.8rem;color:${sp.useGlobal?'var(--blue)':'var(--yellow)'}">${sp.useGlobal?'Toggle off to customize independently':'Toggle on to revert to Global'}</span>
+    </div>
+    <div ${disabled}>
+      <div class="section-divider">📊 Market Demand</div>
+      <div class="decisions-grid">
+        ${sliderCard('demandVolume',scope,'Demand Index','50','200','1',eff.demandVolume,'','')}
+      </div>
+      <div style="margin:1rem 0">
+        <div class="section-divider">🌍 Geography Mix</div>
+        <div class="decisions-grid" style="margin-bottom:.5rem">
+          ${sliderCard('localPct',scope,'Local (%)','0','100','5',eff.localPct,'%','')}
+          ${sliderCard('regionalPct',scope,'Regional (%)','0','100','5',eff.regionalPct,'%','')}
+          ${sliderCard('nationalPct',scope,'National (%)','0','100','5',eff.nationalPct,'%','')}
+          ${sliderCard('internationalPct',scope,'International (%)','0','100','5',eff.internationalPct,'%','')}
+        </div>
+        <div id="geo-sum-${scope}" class="pct-sum">${geoSum(eff)}% total</div>
+      </div>
+      <div style="margin:1rem 0">
+        <div class="section-divider">💳 Payer Mix</div>
+        <div class="decisions-grid" style="margin-bottom:.5rem">
+          ${sliderCard('commercialPct',scope,'Commercial (%)','0','100','5',eff.commercialPct,'%','')}
+          ${sliderCard('governmentPct',scope,'Government (%)','0','100','5',eff.governmentPct,'%','')}
+          ${sliderCard('selfPayPct',scope,'Self-Pay (%)','0','100','5',eff.selfPayPct,'%','')}
+        </div>
+        <div id="payer-sum-${scope}" class="pct-sum">${payerSum(eff)}% total</div>
+      </div>
+      <div class="section-divider">🏥 Clinic Operations</div>
+      <div class="decisions-grid">
+        ${sliderCard('providers',scope,'Providers (FTE)','0.5','10','0.5',eff.providers,'FTE','')}
+        ${selectCard('slotsPerDay',scope,'Daily Template',['8','12','16','20','24','28'],eff.slotsPerDay,'')}
+        ${sliderCard('newPatientTargetPct',scope,'New Pt Target (%)','10','60','5',eff.newPatientTargetPct,'%','')}
+        ${sliderCard('templateEfficiency',scope,'Template Fill (%)','60','100','5',eff.templateEfficiency,'%','')}
+        ${toggleCard('overtimeAllowed',scope,'Allow Overtime',eff.overtimeAllowed,'')}
+      </div>
+      <div class="section-divider">🎯 Template Waterfall — Slot Tier Allocation</div>
+      ${waterfallInputs(scope, eff)}
+      <div class="section-divider">🔬 Downstream Capacity</div>
+      <div class="decisions-grid">
+        ${sliderCard('radiologyAllocation',scope,'Radiology Slots','20','200','10',eff.radiologyAllocation,'slots','')}
+        ${sliderCard('labCapacity',scope,'Lab Capacity (%)','50','150','10',eff.labCapacity,'%','')}
+        ${sliderCard('procedureSlots',scope,'Procedure Slots','5','80','5',eff.procedureSlots,'slots','')}
+      </div>
+    </div>
+  `;
+  updatePctSums(scope);
+  updateWaterfallViz(scope, eff);
+  return panel;
+}
+
+function toggleGlobalMode(i, useGlobal) {
+  state.specialties[i].useGlobal = useGlobal;
+  if (useGlobal) state.specialties[i].overrides = {};
+  renderContent();
+}
+
+// ══════════════════════════════════════════════ WATERFALL INPUTS
+function waterfallInputs(scope, cfg) {
+  const openPct = Math.max(0, 100 - (cfg.topTierPct||0) - (cfg.priorityPct||0) - (cfg.commercialReservedPct||0));
+  return `
+    <div class="waterfall-wrap">
+      <div class="waterfall-bar" id="wf-bar-${scope}">
+        <div class="wf-seg top-tier" style="flex:${cfg.topTierPct||0}"><span>${cfg.topTierPct||0}%</span></div>
+        <div class="wf-seg priority"   style="flex:${cfg.priorityPct||0}"><span>${cfg.priorityPct||0}%</span></div>
+        <div class="wf-seg commercial" style="flex:${cfg.commercialReservedPct||0}"><span>${cfg.commercialReservedPct||0}%</span></div>
+        <div class="wf-seg open-access" style="flex:${openPct}"><span>${openPct}%</span></div>
+      </div>
+      <div class="waterfall-label-row">
+        <div class="wf-label" style="color:var(--tier-top);flex:${cfg.topTierPct||0}">Top Tier</div>
+        <div class="wf-label" style="color:var(--tier-priority);flex:${cfg.priorityPct||0}">Priority</div>
+        <div class="wf-label" style="color:var(--tier-commercial);flex:${cfg.commercialReservedPct||0}">Commercial</div>
+        <div class="wf-label" style="color:var(--tier-open);flex:${openPct}">Open Access</div>
+      </div>
+      <div id="wf-sum-${scope}" class="pct-sum ${openPct>=0&&openPct<=100?'ok':'err'}" style="margin-top:.5rem">
+        ${openPct}% Open Access slots remaining
+      </div>
+      <div class="waterfall-cascade" id="wf-cascade-${scope}">
+        <div class="cascade-arrow ${cfg.topTierCascades?'active':''}">
+          🔻 Top Tier cascades down: ${cfg.topTierCascades?'ON':'OFF'}
+        </div>
+        <div class="cascade-arrow ${cfg.releaseUnusedSlots?'active':''}">
+          🔓 Release unused slots: ${cfg.releaseUnusedSlots?'ON':'OFF'}
+        </div>
+      </div>
+    </div>
+    <div class="decisions-grid">
+      ${sliderCard('topTierPct',scope,'Top Tier Slots (%)','0','40','5',cfg.topTierPct||0,'%','Reserved for urgent/oncology/critical indications. Patients presenting with these indications get first access to these slots.')}
+      ${sliderCard('priorityPct',scope,'Priority Slots (%)','0','40','5',cfg.priorityPct||0,'%','Reserved for priority referring relationships (VIP MDs, health system partners). Top Tier patients may cascade into these.')}
+      ${sliderCard('commercialReservedPct',scope,'Commercial Slots (%)','0','50','5',cfg.commercialReservedPct||0,'%','Slots reserved for commercial insurance patients. Priority and Top Tier patients may cascade into these slots.')}
+      ${toggleCard('topTierCascades',scope,'Top Tier Cascades Down',cfg.topTierCascades||false,'When Top Tier slots are full, these patients spill into Priority → Commercial → Open slots before being waitlisted.')}
+      ${toggleCard('releaseUnusedSlots',scope,'Release Unused Slots',cfg.releaseUnusedSlots||false,'Unfilled tier slots open to the next tier down before close of scheduling. Prevents wasted capacity.')}
+    </div>
+  `;
+}
+
+function updateWaterfallViz(scope, cfg) {
+  const bar = document.getElementById(`wf-bar-${scope}`);
+  const sumEl = document.getElementById(`wf-sum-${scope}`);
+  const cascEl = document.getElementById(`wf-cascade-${scope}`);
+  if (!bar) return;
+  const tt = +(cfg.topTierPct||0), pr = +(cfg.priorityPct||0), cm = +(cfg.commercialReservedPct||0);
+  const oa = Math.max(0, 100 - tt - pr - cm);
+  const segs = bar.querySelectorAll('.wf-seg');
+  const pcts = [tt, pr, cm, oa];
+  segs.forEach((s, i) => { s.style.flex = pcts[i]; s.querySelector('span').textContent = pcts[i]+'%'; });
+  const labels = bar.parentElement.querySelector('.waterfall-label-row');
+  if (labels) {
+    const ls = labels.querySelectorAll('.wf-label');
+    ls.forEach((l, i) => l.style.flex = pcts[i]);
+  }
+  if (sumEl) {
+    const over = tt + pr + cm > 100;
+    sumEl.className = 'pct-sum '+(over?'err':'ok');
+    sumEl.textContent = over ? `⚠️ Tier total (${tt+pr+cm}%) exceeds 100% — reduce allocations` : `${oa}% Open Access slots remaining`;
+  }
+  if (cascEl) {
+    cascEl.innerHTML = `
+      <div class="cascade-arrow ${cfg.topTierCascades?'active':''}">🔻 Top Tier cascades down: ${cfg.topTierCascades?'ON':'OFF'}</div>
+      <div class="cascade-arrow ${cfg.releaseUnusedSlots?'active':''}">🔓 Release unused slots: ${cfg.releaseUnusedSlots?'ON':'OFF'}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════ INPUT COMPONENTS
+function sliderCard(field, scope, label, min, max, step, value, unit, tip) {
+  const id = `${scope}-${field}`;
+  const tipAttr = tip ? `data-tip="${tip}"` : '';
+  return `<div class="input-card">
+    <label ${tipAttr}>${label}${tip?' ℹ️':''}</label>
+    <div class="input-row">
+      <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}"
+        oninput="handleInput('${field}','${scope}',this.value)">
+      <span class="val-display" id="${id}-display">${value}${unit}</span>
+    </div>
+  </div>`;
+}
+
+function selectCard(field, scope, label, options, value, tip) {
+  const id = `${scope}-${field}`;
+  const tipAttr = tip ? `data-tip="${tip}"` : '';
+  const opts = options.map(o => `<option value="${o}" ${o==value?'selected':''}>${o}</option>`).join('');
+  return `<div class="input-card"><label ${tipAttr}>${label}${tip?' ℹ️':''}</label><select id="${id}" onchange="handleInput('${field}','${scope}',this.value)">${opts}</select></div>`;
+}
+
+function toggleCard(field, scope, label, value, tip) {
+  const id = `${scope}-${field}`;
+  const tipAttr = tip ? `data-tip="${tip}"` : '';
+  return `<div class="input-card">
+    <label ${tipAttr}>${label}${tip?' ℹ️':''}</label>
+    <div class="toggle-row">
+      <label class="toggle"><input type="checkbox" id="${id}" ${value?'checked':''} onchange="handleInput('${field}','${scope}',this.checked)"><span class="toggle-slider"></span></label>
+      <span style="font-size:.85rem;color:var(--gray);margin-left:.5rem">${value?'Yes':'No'}</span>
+    </div>
+  </div>`;
+}
+
+function handleInput(field, scope, value) {
+  let v = (value===true||value===false) ? value : (isNaN(+value)?value:+value);
+  if (scope === 'global') {
+    state.globalSettings[field] = v;
+  } else if (scope.startsWith('sp')) {
+    const i = parseInt(scope.slice(2));
+    state.specialties[i].overrides[field] = v;
+  }
+  const displayEl = document.getElementById(`${scope}-${field}-display`);
+  if (displayEl) {
+    const UNITS = {demandVolume:'',localPct:'%',regionalPct:'%',nationalPct:'%',internationalPct:'%',
+      commercialPct:'%',governmentPct:'%',selfPayPct:'%',providers:' FTE',slotsPerDay:'',
+      newPatientTargetPct:'%',templateEfficiency:'%',radiologyAllocation:' slots',
+      labCapacity:'%',procedureSlots:' slots',topTierPct:'%',priorityPct:'%',commercialReservedPct:'%'};
+    displayEl.textContent = v + (UNITS[field] || '');
+  }
+  // Refresh waterfall viz & pct sums
+  const cfg = scope==='global' ? state.globalSettings : {...state.globalSettings,...state.specialties[parseInt(scope.slice(2))].overrides};
+  updateWaterfallViz(scope, cfg);
+  updatePctSums(scope);
+}
+
+function updatePctSums(scope) {
+  const cfg = scope==='global' ? state.globalSettings : {...state.globalSettings,...state.specialties[parseInt(scope.slice(2))].overrides};
+  const geoEl = document.getElementById(`geo-sum${scope==='global'?'':'-'+scope}`);
+  const payEl = document.getElementById(`payer-sum${scope==='global'?'':'-'+scope}`);
+  if (geoEl) { const s=geoSum(cfg); geoEl.textContent=s+'% total (must = 100%)'; geoEl.className='pct-sum '+(s===100?'ok':'err'); }
+  if (payEl) { const s=payerSum(cfg); payEl.textContent=s+'% total (must = 100%)'; payEl.className='pct-sum '+(s===100?'ok':'err'); }
+}
+
+function geoSum(g) { return (g.localPct||0)+(g.regionalPct||0)+(g.nationalPct||0)+(g.internationalPct||0); }
+function payerSum(g) { return (g.commercialPct||0)+(g.governmentPct||0)+(g.selfPayPct||0); }
+
+// ══════════════════════════════════════════════ SIMULATION ENGINE
+function runPeriod() {
+  const workingDays = WORKING_DAYS[state.facility.periodType];
+  const periodResults = { period: state.currentPeriod, specialties: [] };
+  state.specialties.forEach((sp, i) => {
+    const cfg = sp.useGlobal ? state.globalSettings : { ...state.globalSettings, ...sp.overrides };
+    const result = simulateSpecialty(cfg, workingDays, state.backlogs[i]);
+    state.backlogs[i] = result.newBacklog;
+    periodResults.specialties.push({ ...result, specialtyName: sp.name, color: sp.color });
+  });
+  periodResults.aggregate = aggregateResults(periodResults.specialties);
+  state.history.push(periodResults);
+  state.currentPeriod++;
+  showResults(periodResults);
+  renderMain();
+}
+
+function simulateSpecialty(cfg, workingDays, prevBacklog) {
+  // ── Capacity
+  const dailyCapacity = cfg.providers * cfg.slotsPerDay * (cfg.templateEfficiency / 100);
+  const baseCapacity  = dailyCapacity * workingDays;
+  const totalCapacity = baseCapacity * (cfg.overtimeAllowed ? 1.18 : 1.0);
+
+  // ── Tier slot allocation
+  const tt  = +(cfg.topTierPct  || 0) / 100;
+  const pr  = +(cfg.priorityPct || 0) / 100;
+  const cm  = +(cfg.commercialReservedPct || 0) / 100;
+  const oa  = Math.max(0, 1 - tt - pr - cm);
+  const ttSlots  = Math.round(totalCapacity * tt);
+  const prSlots  = Math.round(totalCapacity * pr);
+  const cmSlots  = Math.round(totalCapacity * cm);
+  const oaSlots  = Math.round(totalCapacity * oa);
+
+  // ── Demand generation
+  const geoEff = ((cfg.localPct||0)*1.0 + (cfg.regionalPct||0)*0.82 + (cfg.nationalPct||0)*0.62 + (cfg.internationalPct||0)*0.38) / 100;
+  const payerMod = 1 - ((cfg.selfPayPct||0) * 0.18 / 100);
+  const rawDemand = (cfg.demandVolume/100) * dailyCapacity * workingDays * 1.15 * geoEff * payerMod;
+  const totalDemand = rawDemand + prevBacklog;
+
+  // ── Demand by tier
+  // Top-tier patients: urgent indications — ~12-15% of demand, slightly more for oncology/high-acuity specialties
+  const ttDemandPct = 0.12 + ((cfg.nationalPct||0) + (cfg.internationalPct||0)) * 0.001;
+  const ttDemand  = Math.round(totalDemand * ttDemandPct);
+  // Priority: referring physician relationships — ~15-20% of demand, boosted by geographic reach
+  const prDemandPct = 0.15 + (cfg.regionalPct||0) * 0.001;
+  const prDemand  = Math.round(totalDemand * prDemandPct);
+  // Commercial (non-top-tier, non-priority): commercial payer pool minus above tiers
+  const cmDemandBase = totalDemand * ((cfg.commercialPct||0)/100);
+  const cmDemand  = Math.max(0, Math.round(cmDemandBase - ttDemand * 0.6 - prDemand * 0.4));
+  // Open/other: government + self-pay + remaining commercial
+  const oaDemand  = Math.max(0, Math.round(totalDemand - ttDemand - prDemand - cmDemand));
+
+  // ══ WATERFALL FILL LOGIC ══
+  let ttFilled = 0, ttInPr = 0, ttInCm = 0, ttInOa = 0;
+  let prFilled = 0, prInCm = 0, prInOa = 0;
+  let cmFilled = 0, cmInOa = 0;
+  let oaFilled = 0;
+
+  // Step 1: Top Tier fills Top Tier slots
+  ttFilled    = Math.min(ttDemand, ttSlots);
+  let ttLeft  = ttDemand - ttFilled;
+  let ttSlotsLeft = ttSlots - ttFilled;  // unused TT slots
+
+  // Step 2: Top Tier cascades into Priority slots (if enabled)
+  let prAvail = prSlots;
+  if (cfg.topTierCascades && ttLeft > 0) {
+    ttInPr  = Math.min(ttLeft, prAvail);
+    ttLeft -= ttInPr;
+    prAvail -= ttInPr;
+  }
+
+  // Step 3: Priority patients fill remaining Priority slots
+  prFilled    = Math.min(prDemand, prAvail);
+  let prLeft  = prDemand - prFilled;
+  let prSlotsLeft = prAvail - prFilled;  // unused after TT cascade + priority fill
+
+  // Step 4: Top Tier cascade into Commercial slots
+  let cmAvail = cmSlots;
+  if (cfg.topTierCascades && ttLeft > 0) {
+    ttInCm  = Math.min(ttLeft, cmAvail);
+    ttLeft -= ttInCm;
+    cmAvail -= ttInCm;
+  }
+  // Priority cascades into Commercial
+  prInCm    = Math.min(prLeft, cmAvail);
+  prLeft   -= prInCm;
+  cmAvail  -= prInCm;
+
+  // Step 5: Commercial patients fill remaining Commercial slots
+  cmFilled    = Math.min(cmDemand, cmAvail);
+  let cmLeft  = cmDemand - cmFilled;
+  let cmSlotsLeft = cmAvail - cmFilled;
+
+  // Step 6: Release unused slots to Open Access pool (if enabled)
+  let oaAvail = oaSlots;
+  if (cfg.releaseUnusedSlots) {
+    oaAvail += ttSlotsLeft + prSlotsLeft + cmSlotsLeft;
+  }
+
+  // Top Tier continues cascading into Open Access
+  if (cfg.topTierCascades && ttLeft > 0) {
+    ttInOa  = Math.min(ttLeft, oaAvail);
+    ttLeft -= ttInOa;
+    oaAvail -= ttInOa;
+  }
+  // Priority cascades into Open Access
+  prInOa    = Math.min(prLeft, oaAvail);
+  oaAvail  -= prInOa;
+  // Commercial leftover into Open Access
+  cmInOa    = Math.min(cmLeft, oaAvail);
+  oaAvail  -= cmInOa;
+  // Open-access patients fill remaining open slots
+  oaFilled  = Math.min(oaDemand, oaAvail);
+
+  const totalScheduled = ttFilled + ttInPr + ttInCm + ttInOa +
+                         prFilled + prInCm + prInOa +
+                         cmFilled + cmInOa + oaFilled;
+  const newBacklog = Math.max(0, totalDemand - totalCapacity) * 0.85;
+  const utilization = totalScheduled / totalCapacity;
+
+  // ── Who actually fills each tier (for reporting)
+  const tierFill = {
+    topTier:    { slots: ttSlots,  filled: ttFilled,                              demand: ttDemand },
+    priority:   { slots: prSlots,  filled: prFilled + ttInPr,                    demand: prDemand },
+    commercial: { slots: cmSlots,  filled: cmFilled + ttInCm + prInCm,           demand: cmDemand },
+    open:       { slots: oaSlots,  filled: oaFilled + ttInOa + prInOa + cmInOa, demand: oaDemand },
+  };
+
+  // ── TNA: 3rd Next Available (supply-side)
+  const v2 = 1.5 + Math.random() * 2;
+  let tna;
+  if (utilization < 0.70)      tna = 2 + v2;
+  else if (utilization < 0.82) tna = 5 + (utilization - 0.70) * 50 + v2;
+  else if (utilization < 0.92) tna = 11 + (utilization - 0.82) * 80 + v2;
+  else                         tna = 19 + (newBacklog / Math.max(1, dailyCapacity)) + v2;
+  tna = +tna.toFixed(1);
+
+  // ── Median Lead Time (demand-side: actual patient-experienced wait)
+  // Each tier gets faster access because their slots are pre-reserved
+  // Top-tier patients: benefit from reserved slots + cascade priority → faster lead time
+  const ttLeadMult = cfg.topTierCascades ? 0.35 : 0.45;  // cascades = even faster fallback
+  const ttLeadTime = Math.max(1, tna * ttLeadMult + (Math.random() * 1.5 - 0.5));
+  const prLeadTime = Math.max(2, tna * 0.62 + (Math.random() * 2 - 0.5));
+  const cmLeadTime = Math.max(3, tna * 0.85 + (Math.random() * 2 - 0.5));
+  const oaLeadTime = Math.max(3, tna * (cfg.releaseUnusedSlots ? 1.05 : 1.20) + (Math.random() * 3 - 0.5));
+  // Volume-weighted median lead time across all seen patients
+  const ttVol = ttFilled + ttInPr + ttInCm + ttInOa;
+  const prVol = prFilled + prInCm + prInOa;
+  const cmVol = cmFilled + cmInOa;
+  const oaVol = oaFilled;
+  const totalVol = ttVol + prVol + cmVol + oaVol || 1;
+  const medianLeadTime = +(
+    (ttVol * ttLeadTime + prVol * prLeadTime + cmVol * cmLeadTime + oaVol * oaLeadTime) / totalVol
+  ).toFixed(1);
+
+  // ── Median Requested Date Lag (±days from preferred appointment date)
+  // Patients have a preferred date. Lag = |scheduled_date - preferred_date|.
+  // Top-tier: want ASAP → preferred ≈ request date, lag ≈ lead time (but usually very short)
+  // Priority: may have specific preferred date 5-14 days out; lag = |lead - preferred_gap|
+  // Commercial: ~40% ASAP, ~60% preferred date 7-14 days out
+  // Open access: often flexible, but may be pushed further back
+  const ttLag  = Math.max(0, ttLeadTime - 1 + (Math.random() * 1.5 - 0.5));
+  const prPreferredGap = 7 + Math.random() * 7;  // priority patients often call 7-14 days ahead
+  const prLag  = Math.abs(prLeadTime - prPreferredGap) * 0.5 + Math.random();
+  const cmPreferredGap = 10 + Math.random() * 10;
+  const cmLag  = Math.abs(cmLeadTime - cmPreferredGap) * 0.45 + Math.random() * 1.5;
+  const oaLag  = Math.max(0, oaLeadTime - 5 + (Math.random() * 4 - 1));
+  const medianRequestedDateLag = +(
+    (ttVol * ttLag + prVol * prLag + cmVol * cmLag + oaVol * oaLag) / totalVol
+  ).toFixed(1);
+
+  // ── Pct within thresholds (using lead time distribution around median)
+  const pctWithin14 = Math.min(99, Math.max(5,
+    tna <= 7  ? 97 - Math.random()*3 :
+    tna <= 14 ? 88 - (tna-7)*2 - Math.random()*5 :
+                Math.max(20, 88 - (tna-7)*4 - Math.random()*8)));
+  const pctWithin3Days = Math.min(99, Math.max(5,
+    tna <= 5  ? 82 - Math.random()*5 :
+    tna <= 10 ? 65 - (tna-5)*3 - Math.random()*5 :
+                Math.max(10, 50 - (tna-10)*3 - Math.random()*8)));
+
+  // ── No-show (higher when waits are long)
+  const noShowRate = Math.min(0.28, 0.06 + (medianLeadTime * 0.0030) + Math.random() * 0.02);
+  const actualVisits = Math.round(totalScheduled * (1 - noShowRate));
+
+  // ── New vs Established
+  const newDemandBase = 0.28 + ((cfg.nationalPct||0) + (cfg.internationalPct||0)) * 0.0025;
+  const newPtCapPct = (cfg.newPatientTargetPct || 30) / 100;
+  const newPtPct = (Math.min(newPtCapPct, newDemandBase) * 100) + (Math.random() * 3 - 1.5);
+  const newVisits = Math.round(actualVisits * newPtPct / 100);
+  const estVisits = actualVisits - newVisits;
+
+  // ── Payer mix of SEEN patients (commercial attracted by good access)
+  const accessBonus = pctWithin14 / 100;
+  const commRaw  = (cfg.commercialPct||0) * (0.80 + accessBonus * 0.5);
+  const govRaw   = (cfg.governmentPct||0) * 1.0;
+  const selfRaw  = (cfg.selfPayPct||0)    * (0.5 + accessBonus * 0.35);
+  const payerTotal = commRaw + govRaw + selfRaw || 1;
+  const commercialPct      = (commRaw  / payerTotal) * 100;
+  const governmentPct      = (govRaw   / payerTotal) * 100;
+  const selfPayPctActual   = (selfRaw  / payerTotal) * 100;
+
+  // ── Downstream
+  const imagingUtil  = (actualVisits*0.33) / Math.max(1, cfg.radiologyAllocation||80);
+  const labUtil      = 1 / Math.max(0.01, (cfg.labCapacity||90)/100);
+  const procUtil     = (actualVisits*0.14) / Math.max(1, cfg.procedureSlots||15);
+
+  const radiologyWait  = imagingUtil < 0.75 ? 1.5+Math.random()   : imagingUtil < 0.90 ? 3+(imagingUtil-0.75)*12+Math.random()    : 7+(imagingUtil-0.90)*60+Math.random()*2;
+  const labTAT         = labUtil    < 0.75 ? 0.8+Math.random()*0.4 : labUtil    < 0.90 ? 1.5+Math.random()                       : 3+(labUtil-0.90)*20+Math.random();
+  const procedureWait  = procUtil   < 0.75 ? 4+Math.random()*2     : procUtil   < 0.90 ? 8+Math.random()*4                        : 16+Math.random()*8;
+
+  // ── Revenue
+  const commVisits = actualVisits * commercialPct     / 100;
+  const govVisits  = actualVisits * governmentPct     / 100;
+  const selfVisits = actualVisits * selfPayPctActual  / 100;
+  const revenue = commVisits*(380+Math.random()*40) + govVisits*(175+Math.random()*20) + selfVisits*(55+Math.random()*20);
+
+  // ── Satisfaction
+  const satAccessBonus = (pctWithin3Days / 100) * 12;
+  const satWaitPenalty = Math.max(0, (medianLeadTime - 7) * 1.6);
+  const satLagPenalty  = Math.max(0, (medianRequestedDateLag - 3) * 2.0);
+  const satisfaction   = Math.min(99, Math.max(30, 74 + satAccessBonus - satWaitPenalty - satLagPenalty + (Math.random()*4-2)));
+
+  return {
+    // Capacity
+    totalCapacity: Math.round(totalCapacity), totalScheduled: Math.round(totalScheduled),
+    utilization: +(utilization*100).toFixed(1), newBacklog: Math.round(newBacklog),
+    // Tier breakdown
+    tierFill,
+    ttLeadTime: +ttLeadTime.toFixed(1), prLeadTime: +prLeadTime.toFixed(1),
+    cmLeadTime: +cmLeadTime.toFixed(1), oaLeadTime: +oaLeadTime.toFixed(1),
+    // Access
+    tna, medianLeadTime, medianRequestedDateLag,
+    pctWithin14: +pctWithin14.toFixed(1), pctWithin3: +pctWithin3Days.toFixed(1),
+    // Volume
+    actualVisits, newVisits, estVisits, newPatientPct: +newPtPct.toFixed(1),
+    noShowRate: +(noShowRate*100).toFixed(1),
+    // Payer
+    commercialPct: +commercialPct.toFixed(1),
+    governmentPct: +governmentPct.toFixed(1),
+    selfPayPct: +selfPayPctActual.toFixed(1),
+    // Downstream
+    radiologyWait: +radiologyWait.toFixed(1), labTAT: +labTAT.toFixed(1),
+    procedureWait: +procedureWait.toFixed(1),
+    // Financial
+    revenue: Math.round(revenue),
+    // Quality
+    satisfaction: +satisfaction.toFixed(1),
+  };
+}
+
+function aggregateResults(rArr) {
+  const n = rArr.length || 1;
+  const avg = f => rArr.reduce((a,r)=>a+r[f],0)/n;
+  const wAvg = (f, w) => {
+    const tw = rArr.reduce((a,r)=>a+(r[w]||0),0);
+    return tw===0 ? avg(f) : rArr.reduce((a,r)=>a+r[f]*(r[w]||0),0)/tw;
+  };
+  return {
+    tna: +avg('tna').toFixed(1),
+    medianLeadTime: +avg('medianLeadTime').toFixed(1),
+    medianRequestedDateLag: +avg('medianRequestedDateLag').toFixed(1),
+    pctWithin14: +avg('pctWithin14').toFixed(1),
+    pctWithin3: +avg('pctWithin3').toFixed(1),
+    commercialPct: +wAvg('commercialPct','actualVisits').toFixed(1),
+    newPatientPct: +wAvg('newPatientPct','actualVisits').toFixed(1),
+    noShowRate: +avg('noShowRate').toFixed(1),
+    satisfaction: +avg('satisfaction').toFixed(1),
+    revenue: Math.round(rArr.reduce((a,r)=>a+r.revenue,0)),
+    totalVisits: Math.round(rArr.reduce((a,r)=>a+r.actualVisits,0)),
+    radiologyWait: +avg('radiologyWait').toFixed(1),
+    labTAT: +avg('labTAT').toFixed(1),
+    procedureWait: +avg('procedureWait').toFixed(1),
+    utilization: +avg('utilization').toFixed(1),
+  };
+}
+
+// ══════════════════════════════════════════════ RESULTS DISPLAY
+function showResults(periodData) {
+  document.getElementById('results-title').textContent = `Results — ${periodLabel(periodData.period)}`;
+  const body = document.getElementById('results-body');
+  const a = periodData.aggregate;
+
+  const sc = (label, val, target, unit='', inverse=false, cls='') => {
+    const ok = inverse ? val <= target : val >= target;
+    const near = Math.abs(val-target)/Math.max(1,target) < 0.15;
+    const c = cls || (ok ? 'pass' : near ? 'warn' : 'fail');
+    return `<div class="scorecard-item ${c}">
+      <div class="sc-label">${label}</div>
+      <div class="sc-val">${val}${unit}</div>
+      <div class="sc-target">${inverse?'≤':'≥'}${target}${unit} target</div>
+    </div>`;
+  };
+
+  // Tier fill visualization
+  const tierTableRows = periodData.specialties.map(r => {
+    const tf = r.tierFill;
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:.4rem">
+        <span style="width:8px;height:8px;border-radius:50%;background:${r.color};display:inline-block"></span>
+        <strong>${r.specialtyName}</strong></span></td>
+      ${['topTier','priority','commercial','open'].map(k => {
+        const t = tf[k]; const fillPct = t.slots>0 ? Math.round(t.filled/t.slots*100) : 0;
+        const col = {topTier:'#7c3aed',priority:'#0891b2',commercial:'#16a34a',open:'#94a3b8'}[k];
+        return `<td>
+          <div style="font-size:.78rem;font-weight:700;color:${col}">${t.filled}/${t.slots}</div>
+          <div style="height:5px;background:#e2e8f0;border-radius:3px;margin-top:3px;overflow:hidden">
+            <div style="height:100%;width:${fillPct}%;background:${col};border-radius:3px"></div>
+          </div>
+          <div style="font-size:.7rem;color:#94a3b8">${fillPct}% filled</div>
+        </td>`;
+      }).join('')}
+      <td style="font-size:.82rem;font-weight:700">
+        ${r.medianLeadTime}d / ±${r.medianRequestedDateLag}d
+      </td>
+    </tr>`;
+  }).join('');
+
+  const tierTable = `
+    <table class="tier-table">
+      <thead><tr>
+        <th>Specialty</th>
+        <th style="color:var(--tier-top)">Top Tier</th>
+        <th style="color:var(--tier-priority)">Priority</th>
+        <th style="color:var(--tier-commercial)">Commercial</th>
+        <th style="color:var(--tier-open)">Open Access</th>
+        <th>Lead / Lag</th>
+      </tr></thead>
+      <tbody>${tierTableRows}</tbody>
+    </table>`;
+
+  // Per-specialty summary
+  const spSummary = periodData.specialties.map(r => {
+    const cls = v => v ? 'var(--green)' : 'var(--red)';
+    return `<div class="specialty-summary">
+      <div class="ss-head"><span style="width:10px;height:10px;border-radius:50%;background:${r.color};display:inline-block"></span>${r.specialtyName}</div>
+      <div class="ss-body">
+        <div class="ss-metric"><div class="sml">TNA</div><div class="smv" style="color:${cls(r.tna<=TARGETS.tnaMax)}">${r.tna}d</div></div>
+        <div class="ss-metric"><div class="sml">Median Lead</div><div class="smv" style="color:${cls(r.medianLeadTime<=TARGETS.medianLeadMax)}">${r.medianLeadTime}d</div></div>
+        <div class="ss-metric"><div class="sml">Date Lag</div><div class="smv" style="color:${cls(r.medianRequestedDateLag<=TARGETS.medianLagMax)}">±${r.medianRequestedDateLag}d</div></div>
+        <div class="ss-metric"><div class="sml">Commercial</div><div class="smv" style="color:${cls(r.commercialPct>=TARGETS.commercialMin)}">${r.commercialPct.toFixed(0)}%</div></div>
+        <div class="ss-metric"><div class="sml">Revenue</div><div class="smv">$${fmtNum(r.revenue)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Downstream metrics grid
+  const mc = (label, val, target, cls) => `<div class="metric-card ${cls}">
+    <div class="m-label">${label}</div><div class="m-value">${val}</div><div class="m-target">${target}</div>
+  </div>`;
+  const downstreamHtml = `<div class="metrics-grid">
+    ${mc('Radiology Wait', a.radiologyWait.toFixed(1)+'d', `≤${TARGETS.radiologyWaitMax}d target`, a.radiologyWait<=TARGETS.radiologyWaitMax?'green':a.radiologyWait<=10?'yellow':'red')}
+    ${mc('Lab TAT', a.labTAT.toFixed(1)+'d', `≤${TARGETS.labTATMax}d target`, a.labTAT<=TARGETS.labTATMax?'green':a.labTAT<=4?'yellow':'red')}
+    ${mc('Procedure Wait', a.procedureWait.toFixed(1)+'d', `≤${TARGETS.procedureWaitMax}d target`, a.procedureWait<=TARGETS.procedureWaitMax?'green':a.procedureWait<=28?'yellow':'red')}
+    ${mc('No-Show Rate', a.noShowRate.toFixed(1)+'%', `≤${TARGETS.noShowMax}% target`, a.noShowRate<=TARGETS.noShowMax?'green':a.noShowRate<=18?'yellow':'red')}
+    ${mc('Utilization', a.utilization.toFixed(0)+'%', '80-90% ideal', a.utilization>=80&&a.utilization<=92?'green':a.utilization<70||a.utilization>97?'red':'yellow')}
+    ${mc('Total Revenue', '$'+fmtNum(a.revenue), 'all specialties', 'neutral')}
+  </div>`;
+
+  const tips = generateTips(a, periodData.specialties);
+
+  body.innerHTML = `
+    <div>
+      <div class="panel-header"><h3>📊 Access Scorecard</h3><span class="subtitle">${periodData.specialties.length} clinic${periodData.specialties.length>1?'s':''} · ${fmtNum(a.totalVisits)} total visits</span></div>
+      <div class="scorecard" style="margin:.75rem 0">
+        ${sc('TNA (avg)', a.tna, TARGETS.tnaMax, 'd', true)}
+        ${sc('Median Lead Time', a.medianLeadTime, TARGETS.medianLeadMax, 'd', true)}
+        ${sc('Date Lag (±)', a.medianRequestedDateLag, TARGETS.medianLagMax, 'd', true)}
+        ${sc('Within 14 Days', a.pctWithin14, TARGETS.pctWithin14, '%')}
+        ${sc('Within ±3 Days', a.pctWithin3, TARGETS.pctWithin3, '%')}
+        ${sc('Commercial Mix', a.commercialPct, TARGETS.commercialMin, '%')}
+        ${sc('New Patients', a.newPatientPct, TARGETS.newPtMin, '%')}
+        ${sc('Satisfaction', a.satisfaction, TARGETS.satisfactionMin, '/100')}
+      </div>
+    </div>
+    <div>
+      <div class="panel-header"><h3>🎯 Template Waterfall — Tier Fill by Specialty</h3><span class="subtitle">Slots filled / allocated · Median Lead Time / Median Date Lag</span></div>
+      <div style="overflow-x:auto;padding:.75rem">${tierTable}</div>
+    </div>
+    <div>
+      <div class="panel-header"><h3>🏥 Specialty Summary</h3></div>
+      <div style="padding:.75rem;display:flex;flex-direction:column;gap:.5rem">${spSummary}</div>
+    </div>
+    <div>
+      <div class="panel-header"><h3>🔬 Downstream & Operations</h3></div>
+      <div style="padding:.75rem">${downstreamHtml}</div>
+    </div>
+    ${tips.length ? `<div>
+      <div class="panel-header"><h3>💡 Coaching Insights</h3></div>
+      <div class="tip-list" style="padding:.75rem">${tips.map(t=>`<div class="tip tip-${t.type}"><span class="tip-icon">${t.icon}</span>${t.msg}</div>`).join('')}</div>
+    </div>` : ''}
+  `;
+  document.getElementById('results-overlay').classList.add('active');
+}
+
+function generateTips(a, specialties) {
+  const tips = [];
+
+  // TNA
+  if (a.tna > TARGETS.tnaMax)
+    tips.push({type:'err',icon:'🚨',msg:`TNA is ${a.tna} days (target ≤${TARGETS.tnaMax}). Add provider FTE, increase daily template, or reduce demand index.`});
+  else
+    tips.push({type:'ok',icon:'✅',msg:`Access is solid: TNA ${a.tna} days — within the 14-day benchmark.`});
+
+  // Median Lead Time
+  if (a.medianLeadTime > TARGETS.medianLeadMax)
+    tips.push({type:'err',icon:'⏱️',msg:`Median lead time is ${a.medianLeadTime} days (target ≤${TARGETS.medianLeadMax}). Patients are experiencing wait times above goal. Increase capacity or expand Top Tier cascade policy.`});
+  else if (a.medianLeadTime > 10)
+    tips.push({type:'warn',icon:'⚠️',msg:`Median lead time ${a.medianLeadTime} days — approaching limit. Patients in lower tiers may face longer waits.`});
+
+  // Date Lag
+  if (a.medianRequestedDateLag > TARGETS.medianLagMax)
+    tips.push({type:'warn',icon:'📅',msg:`Median date lag is ±${a.medianRequestedDateLag} days (target ≤±${TARGETS.medianLagMax}). Patients aren't getting appointments close to their preferred date. Enable "Release Unused Slots" or expand Open Access %.`});
+  else
+    tips.push({type:'ok',icon:'✅',msg:`Date lag ±${a.medianRequestedDateLag} days — patients are getting appointments near their preferred dates.`});
+
+  // Commercial
+  if (a.commercialPct < TARGETS.commercialMin)
+    tips.push({type:'err',icon:'💳',msg:`Commercial mix is ${a.commercialPct.toFixed(0)}% (target >50%). Increase Commercial Reserved % in your template waterfall and improve overall access to attract commercial payers.`});
+
+  // Tier utilization tips
+  specialties.forEach(r => {
+    const tf = r.tierFill;
+    const ttUtil = tf.topTier.slots > 0 ? tf.topTier.filled / tf.topTier.slots : 1;
+    if (ttUtil < 0.50 && tf.topTier.slots > 5)
+      tips.push({type:'warn',icon:'🔻',msg:`${r.specialtyName}: Top Tier slots only ${Math.round(ttUtil*100)}% filled. Consider reducing Top Tier % and shifting to Priority or Open Access if urgent demand is lower than expected.`});
+    if (ttUtil >= 0.98 && r.tna > 10)
+      tips.push({type:'warn',icon:'🔴',msg:`${r.specialtyName}: Top Tier slots are full AND access is poor. Enable "Top Tier Cascades Down" so urgent patients can access Priority/Commercial slots.`});
+  });
+
+  // New patients
+  if (a.newPatientPct < TARGETS.newPtMin)
+    tips.push({type:'warn',icon:'🆕',msg:`New patient rate ${a.newPatientPct.toFixed(0)}% (target >25%). Increase new patient template %, expand national/international outreach, or add Priority slots for new referrals.`});
+
+  // Downstream
+  if (a.radiologyWait > TARGETS.radiologyWaitMax)
+    tips.push({type:'warn',icon:'🩻',msg:`Radiology wait ${a.radiologyWait.toFixed(1)} days — delaying patient itineraries. Increase radiology slot allocation.`});
+  if (a.labTAT > TARGETS.labTATMax)
+    tips.push({type:'warn',icon:'🧪',msg:`Lab TAT ${a.labTAT.toFixed(1)} days — exceeds 2-day target. Increase lab capacity % to keep itineraries on track.`});
+  if (a.noShowRate > TARGETS.noShowMax)
+    tips.push({type:'warn',icon:'📭',msg:`No-show rate ${a.noShowRate.toFixed(0)}% (target ≤10%). Strongly correlated with long lead times — shorter waits mean patients show up.`});
+
+  return tips;
+}
+
+function closeResults() {
+  document.getElementById('results-overlay').classList.remove('active');
+}
+
+// ══════════════════════════════════════════════ HISTORY PANEL
+function renderHistoryPanel() {
+  const panel = createPanel('Performance History', 'Aggregate metrics across all specialties');
+  const body = panel.querySelector('.panel-body');
+
+  if (state.history.length >= 2) {
+    body.innerHTML = `<div class="chart-row" style="margin-bottom:1.25rem">
+      <div class="panel" style="padding:1rem">
+        <div style="font-size:.8rem;font-weight:600;color:var(--gray);margin-bottom:.6rem">TNA vs Median Lead Time (days)</div>
+        <div class="chart-container"><canvas id="chart-access"></canvas></div>
+      </div>
+      <div class="panel" style="padding:1rem">
+        <div style="font-size:.8rem;font-weight:600;color:var(--gray);margin-bottom:.6rem">Date Lag · Commercial Mix · Satisfaction</div>
+        <div class="chart-container"><canvas id="chart-mix"></canvas></div>
+      </div>
+    </div>`;
+  }
+
+  const rows = state.history.slice().reverse().map(h => {
+    const a = h.aggregate;
+    const ok = (v, t, inv=false) => inv ? v<=t : v>=t;
+    const badge = (v, t, unit='', inv=false) => `<span class="badge ${ok(v,t,inv)?'green':'red'}">${v}${unit}</span>`;
+    return `<tr>
+      <td><strong>${periodLabel(h.period)}</strong></td>
+      <td>${badge(a.tna, TARGETS.tnaMax, 'd', true)}</td>
+      <td>${badge(a.medianLeadTime, TARGETS.medianLeadMax, 'd', true)}</td>
+      <td><span class="badge ${a.medianRequestedDateLag<=TARGETS.medianLagMax?'green':'red'}">±${a.medianRequestedDateLag}d</span></td>
+      <td>${a.pctWithin14.toFixed(0)}%</td>
+      <td>${badge(a.commercialPct, TARGETS.commercialMin, '%')}</td>
+      <td>${badge(a.newPatientPct, TARGETS.newPtMin, '%')}</td>
+      <td>${a.satisfaction.toFixed(0)}</td>
+      <td>${a.noShowRate.toFixed(1)}%</td>
+      <td>$${fmtNum(a.revenue)}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML += `<div style="overflow-x:auto"><table class="history-table">
+    <thead><tr>
+      <th>Period</th>
+      <th data-tip="3rd Next Available">TNA</th>
+      <th data-tip="Median patient-experienced wait from request to appointment">Median Lead</th>
+      <th data-tip="Median days between preferred and actual appointment date">Date Lag</th>
+      <th data-tip="% booked within 14 days">Within 14d</th>
+      <th>Commercial</th>
+      <th>New Pts</th>
+      <th>Satisfaction</th>
+      <th>No-Show</th>
+      <th>Revenue</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+
+  setTimeout(() => { if (state.history.length >= 2) drawHistoryCharts(); }, 50);
+  return panel;
+}
+
+function drawHistoryCharts() {
+  const labels = state.history.map(h => periodLabel(h.period));
+  const a = h => h.aggregate;
+  if (charts.access) charts.access.destroy();
+  if (charts.mix)    charts.mix.destroy();
+
+  const tnaC   = document.getElementById('chart-access');
+  const mixC   = document.getElementById('chart-mix');
+  if (!tnaC || !mixC) return;
+
+  charts.access = new Chart(tnaC, {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'TNA (d)',         data:state.history.map(h=>a(h).tna),            borderColor:'#dc2626',backgroundColor:'#dc262622',borderWidth:2.5,pointRadius:4,fill:true,tension:.3},
+      {label:'Median Lead (d)', data:state.history.map(h=>a(h).medianLeadTime), borderColor:'#7c3aed',backgroundColor:'transparent',borderWidth:2,pointRadius:4,fill:false,tension:.3,borderDash:[4,3]},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:11},boxWidth:14}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}}}}}
+  });
+
+  charts.mix = new Chart(mixC, {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'Date Lag (d)',   data:state.history.map(h=>a(h).medianRequestedDateLag), borderColor:'#0891b2',backgroundColor:'transparent',borderWidth:2,pointRadius:4,fill:false,tension:.3},
+      {label:'Commercial %',  data:state.history.map(h=>a(h).commercialPct),           borderColor:'#16a34a',backgroundColor:'#16a34a22',borderWidth:2.5,pointRadius:4,fill:false,tension:.3,yAxisID:'y2'},
+      {label:'Satisfaction',  data:state.history.map(h=>a(h).satisfaction),            borderColor:'#ca8a04',backgroundColor:'transparent',borderWidth:2,pointRadius:4,fill:false,tension:.3,borderDash:[4,3],yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:11},boxWidth:14}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10}}},
+        y:{grid:{color:'#f0f0f0'},ticks:{font:{size:10}},title:{display:true,text:'Days',font:{size:10}}},
+        y2:{position:'right',grid:{display:false},ticks:{font:{size:10}},title:{display:true,text:'% / Score',font:{size:10}}},
+      }}
+  });
+}
+
+// ══════════════════════════════════════════════ SAVE / LOAD
+function openSaveModal() {
+  document.getElementById('save-modal').classList.add('active');
+  const inputs = document.querySelectorAll('#save-passcode-inputs input');
+  inputs.forEach((inp,i) => {
+    inp.value='';
+    inp.oninput = () => { inp.value=inp.value.replace(/\D/,''); if(inp.value&&i<3) inputs[i+1].focus(); };
+    inp.onkeydown = e => { if(e.key==='Backspace'&&!inp.value&&i>0) inputs[i-1].focus(); };
+  });
+  inputs[0].focus();
+  document.getElementById('save-status').textContent='';
+}
+function closeSaveModal() { document.getElementById('save-modal').classList.remove('active'); }
+function confirmSave() {
+  const inputs = document.querySelectorAll('#save-passcode-inputs input');
+  const code = Array.from(inputs).map(i=>i.value).join('');
+  const st = document.getElementById('save-status');
+  if (!/^\d{4}$/.test(code)) { st.textContent='Enter all 4 digits.'; st.className='status-msg err'; return; }
+  localStorage.setItem(`pas_${code}`, JSON.stringify(state));
+  st.textContent=`Saved! Passcode: ${code}`; st.className='status-msg ok';
+  setTimeout(closeSaveModal, 1500);
+}
+
+function confirmRestart() {
+  document.getElementById('confirm-title').textContent='Restart Simulation?';
+  document.getElementById('confirm-msg').textContent='This will clear all history and start over. Save first if you want to keep your progress.';
+  document.getElementById('confirm-ok-btn').onclick = () => { closeConfirm(); showScreen('welcome'); state=null; buildSpecialtyInputs(); };
+  document.getElementById('confirm-modal').classList.add('active');
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('active'); }
+
+document.getElementById('w-load-code').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g,'').slice(0,4);
+});
+
+// ══════════════════════════════════════════════ UTILS
+function createPanel(title, subtitle) {
+  const p = document.createElement('div');
+  p.className = 'panel animate-in';
+  p.innerHTML = `<div class="panel-header"><div><h3>${title}</h3>${subtitle?`<div class="subtitle">${subtitle}</div>`:''}</div></div><div class="panel-body"></div>`;
+  return p;
+}
+
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  e.className = cls;
+  return e;
+}
+
+function fmtNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000)    return (n/1000).toFixed(0)+'K';
+  return Math.round(n).toString();
+}
+
+// ══════════════════════════════════════════════ INIT
+buildSpecialtyInputs();
+</script>
+</body>
+</html>
