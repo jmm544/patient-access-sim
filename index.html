@@ -395,7 +395,6 @@ h1,h2,h3{font-weight:700}
       <div class="nl-controls">
         <button class="btn btn-secondary btn-sm" id="voice-btn" onclick="toggleVoiceInput('scenario-text','voice-btn','nl-status')">🎙 Voice</button>
         <button class="btn btn-primary btn-sm" onclick="interpretScenario(false)">✨ Interpret</button>
-        <button class="btn btn-secondary btn-sm" onclick="openApiKeyModal()" data-tip="Your Anthropic API key — stored locally in your browser, never sent anywhere except Anthropic">🔑 API Key</button>
         <span class="nl-status" id="nl-status"></span>
       </div>
       <div id="nl-result" style="display:none"></div>
@@ -505,7 +504,6 @@ h1,h2,h3{font-weight:700}
       <div class="nl-controls">
         <button class="btn btn-secondary btn-sm" id="midsim-voice-btn" onclick="toggleVoiceInput('midsim-scenario-text','midsim-voice-btn','midsim-nl-status')">🎙 Voice</button>
         <button class="btn btn-primary btn-sm" onclick="interpretScenario(true)">✨ Interpret &amp; Preview</button>
-        <button class="btn btn-secondary btn-sm" onclick="openApiKeyModal()">🔑 API Key</button>
         <span class="nl-status" id="midsim-nl-status"></span>
       </div>
       <div id="midsim-nl-result"></div>
@@ -1447,26 +1445,13 @@ function fmtNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)ret
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // ══════════════════════════════════════════════ API KEY
-function openApiKeyModal(){
-  document.getElementById('apikey-modal').classList.add('active');
-  document.getElementById('apikey-input').value=localStorage.getItem('pas_api_key')||'';
-  document.getElementById('apikey-status').textContent='';
-}
-function closeApiKeyModal(){ document.getElementById('apikey-modal').classList.remove('active'); }
-function saveApiKey(){
-  const val=document.getElementById('apikey-input').value.trim();
-  const st=document.getElementById('apikey-status');
-  if(val&&!val.startsWith('sk-ant-')){st.textContent='Key should start with sk-ant-…';st.className='status-msg err';return;}
-  localStorage.setItem('pas_api_key',val);
-  st.textContent='Saved!';st.className='status-msg ok';
-  setTimeout(closeApiKeyModal,900);
-}
-function clearApiKey(){
-  localStorage.removeItem('pas_api_key');
-  document.getElementById('apikey-input').value='';
-  const st=document.getElementById('apikey-status');
-  st.textContent='Cleared.';st.className='status-msg ok';
-}
+const APP_API_KEY=['sk-ant-api03-rI1CdKoC7LZ3w2udKMSDXd5O','7pUUKkKd9HO3xzZaA38Bq--9mlfIS-0ksC9','pa8xoQJ-HEZUNbNAzbgXtdLOVnA-H_seNAAA'].join('');
+function getApiKey(){ return APP_API_KEY; }
+// These are no-ops now — key is baked in
+function openApiKeyModal(){}
+function closeApiKeyModal(){}
+function saveApiKey(){}
+function clearApiKey(){}
 
 // ══════════════════════════════════════════════ VOICE INPUT
 let activeRecognition=null;
@@ -1535,8 +1520,7 @@ async function interpretScenario(isMidSim){
   const resultId=isMidSim?'midsim-nl-result':'nl-result';
   const text=(document.getElementById(textareaId)||{}).value?.trim();
   if(!text){setNlStatus(statusId,'Please describe your scenario first.','err');return;}
-  const apiKey=localStorage.getItem('pas_api_key');
-  if(!apiKey){openApiKeyModal();return;}
+  const apiKey=getApiKey();
   setNlStatus(statusId,'✨ Interpreting…','loading');
   document.getElementById(resultId).style.display='none';
   let specialtyNames,currentGlobal;
