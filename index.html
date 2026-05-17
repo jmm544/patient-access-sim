@@ -293,6 +293,43 @@ h1,h2,h3{font-weight:700}
   .metrics-grid{grid-template-columns:1fr!important}
   .passcode-input input{width:50px;height:50px;font-size:1.2rem}
 }
+
+/* ── NATURAL LANGUAGE SCENARIO ── */
+.nl-box{background:#f8fafc;border:1.5px solid var(--border);border-radius:10px;padding:1rem;margin-top:1rem}
+.nl-box .nl-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem}
+.nl-box .nl-title{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--navy)}
+.nl-box .nl-badge{font-size:.7rem;background:#eff6ff;color:var(--blue);border-radius:20px;padding:.15rem .5rem;font-weight:600}
+.nl-textarea{width:100%;min-height:80px;padding:.65rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;font-family:inherit;resize:vertical;outline:none;line-height:1.5;transition:border-color .2s}
+.nl-textarea:focus{border-color:var(--blue)}
+.nl-controls{display:flex;gap:.5rem;margin-top:.55rem;align-items:center;flex-wrap:wrap}
+.nl-status{font-size:.78rem;color:var(--gray);margin-left:.25rem}
+.nl-status.loading{color:var(--blue)}.nl-status.err{color:var(--red)}.nl-status.ok{color:var(--green)}
+.voice-btn-active{background:var(--red)!important;color:#fff!important;animation:pulse .9s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+
+.nl-result{margin-top:.85rem;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.nl-result-header{background:#f8fafc;padding:.55rem .85rem;font-size:.8rem;font-weight:700;color:var(--navy);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.5rem}
+.nl-result-body{padding:.75rem .85rem;display:flex;flex-direction:column;gap:.45rem}
+.nl-summary{font-size:.85rem;color:#334155;line-height:1.5;margin-bottom:.25rem}
+.nl-changes{display:flex;flex-direction:column;gap:.3rem}
+.nl-change-row{display:flex;align-items:baseline;gap:.5rem;font-size:.8rem;flex-wrap:wrap}
+.nl-scope{font-weight:700;min-width:75px;flex-shrink:0}
+.nl-scope.global{color:var(--teal)}.nl-scope.specialty{color:var(--tier-top)}
+.nl-param{color:#475569}
+.nl-arrow{color:var(--gray)}
+.nl-old{color:var(--gray);text-decoration:line-through}
+.nl-new{font-weight:700;color:var(--green)}
+.nl-warn{font-size:.78rem;color:var(--yellow);background:#fefce8;border-radius:5px;padding:.25rem .55rem;margin-top:.25rem}
+.nl-apply-row{padding:.6rem .85rem;border-top:1px solid var(--border);background:#f8fafc;display:flex;justify-content:flex-end;gap:.5rem}
+
+/* mid-sim scenario modal */
+.scenario-modal{background:#fff;border-radius:14px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.scenario-modal-header{background:var(--navy);color:#fff;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
+
+/* api key modal */
+.apikey-note{font-size:.78rem;color:var(--gray);margin-top:.5rem;line-height:1.5}
+.apikey-input{width:100%;padding:.6rem .85rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;font-family:monospace;outline:none}
+.apikey-input:focus{border-color:var(--blue)}
 </style>
 </head>
 <body>
@@ -346,6 +383,24 @@ h1,h2,h3{font-weight:700}
       <label>Specialty Names</label>
       <div class="specialty-grid" id="specialty-name-grid"></div>
     </div>
+    <!-- NATURAL LANGUAGE SCENARIO -->
+    <div class="nl-box">
+      <div class="nl-header">
+        <span class="nl-title">Scenario Description</span>
+        <span class="nl-badge">✨ AI-powered</span>
+        <span style="font-size:.75rem;color:var(--gray);margin-left:auto">optional — overrides settings above</span>
+      </div>
+      <textarea class="nl-textarea" id="scenario-text"
+        placeholder="Describe your market conditions and goals in plain English. e.g. &quot;GLOBAL demand is up 10% driven by regional growth. Cardiology demand is down 15% due to a competing hospital opening. We want to maintain >55% commercial mix and add overtime to keep TNA under 14 days.&quot;"></textarea>
+      <div class="nl-controls">
+        <button class="btn btn-secondary btn-sm" id="voice-btn" onclick="toggleVoiceInput('scenario-text','voice-btn','nl-status')">🎙 Voice</button>
+        <button class="btn btn-primary btn-sm" onclick="interpretScenario(false)">✨ Interpret</button>
+        <button class="btn btn-secondary btn-sm" onclick="openApiKeyModal()" data-tip="Your Anthropic API key — stored locally in your browser, never sent anywhere except Anthropic">🔑 API Key</button>
+        <span class="nl-status" id="nl-status"></span>
+      </div>
+      <div id="nl-result" style="display:none"></div>
+    </div>
+
     <div class="welcome-actions">
       <button class="btn btn-primary" onclick="startNewSim()">▶ Start Simulation</button>
     </div>
@@ -379,6 +434,7 @@ h1,h2,h3{font-weight:700}
     <div class="player-badge" id="topbar-player"></div>
     <div class="topbar-actions">
       <button class="btn btn-gold btn-sm" onclick="openSubmitModal()" id="submit-btn" style="display:none">🏆 Submit</button>
+      <button class="btn btn-secondary btn-sm" onclick="openMidSimScenario()">💬 Scenario</button>
       <button class="btn btn-secondary btn-sm" onclick="openSaveModal()">💾 Save</button>
       <button class="btn btn-secondary btn-sm" onclick="confirmRestart()">↺ Restart</button>
     </div>
@@ -412,6 +468,50 @@ h1,h2,h3{font-weight:700}
     <div class="modal-footer">
       <button class="btn btn-gold" onclick="closeResultsAndSubmit()">🏆 Submit to Leaderboard</button>
       <button class="btn btn-primary" onclick="closeResults()">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ API KEY MODAL ══════ -->
+<div id="apikey-modal" class="modal-overlay">
+  <div class="modal-box animate-in">
+    <h3>🔑 Anthropic API Key</h3>
+    <p class="apikey-note">Required for AI scenario interpretation. Your key is stored only in your browser's localStorage and sent directly to Anthropic — never to any other server.</p>
+    <div style="margin-top:.85rem">
+      <label style="font-size:.8rem;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:.4rem">API Key</label>
+      <input type="password" class="apikey-input" id="apikey-input" placeholder="sk-ant-...">
+    </div>
+    <p class="apikey-note">Get a key at <strong>console.anthropic.com</strong> → API Keys. The interpreter uses claude-haiku — very low cost per scenario.</p>
+    <div id="apikey-status" class="status-msg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeApiKeyModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+      <button class="btn btn-danger btn-sm" onclick="clearApiKey()">Clear</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MID-SIM SCENARIO MODAL ══════ -->
+<div id="midsim-modal" class="modal-overlay">
+  <div class="scenario-modal animate-in">
+    <div class="scenario-modal-header">
+      <span style="font-weight:700;font-size:1rem">💬 Scenario Update</span>
+      <button onclick="closeMidSimScenario()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:.25rem .6rem;cursor:pointer;font-size:.95rem">✕</button>
+    </div>
+    <div style="padding:1.1rem;display:flex;flex-direction:column;gap:.75rem">
+      <p style="font-size:.85rem;color:var(--gray);line-height:1.5">Describe changes to apply before the next period. Specific specialty names will override just that clinic; otherwise changes apply globally.</p>
+      <textarea class="nl-textarea" id="midsim-scenario-text" rows="4"
+        placeholder="e.g. &quot;Cardiology demand is up 20% following a new EP lab opening. Reduce Oncology commercial reserved slots to 15% and enable overtime globally. National referrals are growing — shift 5% from local to national.&quot;"></textarea>
+      <div class="nl-controls">
+        <button class="btn btn-secondary btn-sm" id="midsim-voice-btn" onclick="toggleVoiceInput('midsim-scenario-text','midsim-voice-btn','midsim-nl-status')">🎙 Voice</button>
+        <button class="btn btn-primary btn-sm" onclick="interpretScenario(true)">✨ Interpret &amp; Preview</button>
+        <button class="btn btn-secondary btn-sm" onclick="openApiKeyModal()">🔑 API Key</button>
+        <span class="nl-status" id="midsim-nl-status"></span>
+      </div>
+      <div id="midsim-nl-result"></div>
+    </div>
+    <div style="padding:.75rem 1.1rem;border-top:1px solid var(--border);background:#fafafa;display:flex;justify-content:flex-end;gap:.65rem">
+      <button class="btn btn-secondary" onclick="closeMidSimScenario()">Cancel</button>
     </div>
   </div>
 </div>
@@ -529,9 +629,24 @@ function startNewSim(){
     const inp=document.getElementById(`sp-name-${i}`);
     specialties.push(defaultSpecialty((inp&&inp.value.trim())||(SPECIALTY_DEFAULTS[i]||`Specialty ${i+1}`),i));
   }
+  const globalSettings=defaultGlobal();
+  // Apply any pending NL scenario interpretation
+  if(window._pendingNlResult){
+    const nlr=window._pendingNlResult;
+    if(nlr.global) Object.assign(globalSettings,nlr.global);
+    if(nlr.specialties){
+      Object.entries(nlr.specialties).forEach(([sp,changes])=>{
+        const idx=specialties.findIndex(s=>s.name.toLowerCase()===sp.toLowerCase());
+        if(idx<0)return;
+        specialties[idx].useGlobal=false;
+        Object.assign(specialties[idx].overrides,changes);
+      });
+    }
+    window._pendingNlResult=null;
+  }
   state={
     facility:{name:facilityName,playerName,periodType,startYear:2025},
-    globalSettings:defaultGlobal(),
+    globalSettings,
     specialties,
     currentPeriod:1,activeTab:'global',
     history:[],backlogs:specialties.map(()=>0),
@@ -1330,6 +1445,215 @@ function createPanel(title,subtitle){
 }
 function fmtNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(0)+'K';return Math.round(n).toString();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ══════════════════════════════════════════════ API KEY
+function openApiKeyModal(){
+  document.getElementById('apikey-modal').classList.add('active');
+  document.getElementById('apikey-input').value=localStorage.getItem('pas_api_key')||'';
+  document.getElementById('apikey-status').textContent='';
+}
+function closeApiKeyModal(){ document.getElementById('apikey-modal').classList.remove('active'); }
+function saveApiKey(){
+  const val=document.getElementById('apikey-input').value.trim();
+  const st=document.getElementById('apikey-status');
+  if(val&&!val.startsWith('sk-ant-')){st.textContent='Key should start with sk-ant-…';st.className='status-msg err';return;}
+  localStorage.setItem('pas_api_key',val);
+  st.textContent='Saved!';st.className='status-msg ok';
+  setTimeout(closeApiKeyModal,900);
+}
+function clearApiKey(){
+  localStorage.removeItem('pas_api_key');
+  document.getElementById('apikey-input').value='';
+  const st=document.getElementById('apikey-status');
+  st.textContent='Cleared.';st.className='status-msg ok';
+}
+
+// ══════════════════════════════════════════════ VOICE INPUT
+let activeRecognition=null;
+function toggleVoiceInput(textareaId,btnId,statusId){
+  const btn=document.getElementById(btnId);
+  const statusEl=document.getElementById(statusId);
+  if(activeRecognition){activeRecognition.stop();activeRecognition=null;return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){setNlStatus(statusId,'Voice not supported in this browser.','err');return;}
+  const r=new SR();
+  r.continuous=false;r.interimResults=true;r.lang='en-US';
+  activeRecognition=r;
+  btn.classList.add('voice-btn-active');btn.textContent='⏹ Stop';
+  setNlStatus(statusId,'🎙 Listening…','loading');
+  r.onresult=(e)=>{
+    document.getElementById(textareaId).value=Array.from(e.results).map(res=>res[0].transcript).join('');
+  };
+  r.onerror=(e)=>{setNlStatus(statusId,'Error: '+e.error,'err');btn.classList.remove('voice-btn-active');btn.textContent='🎙 Voice';activeRecognition=null;};
+  r.onend=()=>{btn.classList.remove('voice-btn-active');btn.textContent='🎙 Voice';setNlStatus(statusId,'','');activeRecognition=null;};
+  r.start();
+}
+
+// ══════════════════════════════════════════════ NL INTERPRETATION
+function buildSystemPrompt(){
+  return `You are a healthcare outpatient operations simulation assistant. Parse natural language scenario descriptions and return ONLY a valid JSON object — no prose, no markdown fences.
+
+PARAMETER REFERENCE (global and per-specialty):
+• demandVolume 50-200 (baseline 100): "up X%" means multiply current by (1+X/100); "down X%" means multiply by (1-X/100)
+• localPct, regionalPct, nationalPct, internationalPct — each 0-100, MUST sum to 100
+• commercialPct, governmentPct, selfPayPct — each 0-100, MUST sum to 100
+• providers 0.5-10 (FTE, step 0.5)
+• slotsPerDay must be exactly one of: 8, 12, 16, 20, 24, 28
+• newPatientTargetPct 10-60
+• templateEfficiency 60-100
+• overtimeAllowed true or false
+• topTierPct 0-40 (urgent/oncology reserved slots)
+• priorityPct 0-40 (VIP referring MD reserved slots)
+• commercialReservedPct 0-50 (commercial insurance reserved slots)
+• releaseUnusedSlots true or false
+• topTierCascades true or false
+• radiologyAllocation 20-200
+• labCapacity 50-150
+• procedureSlots 5-80
+
+RULES:
+1. Return ONLY the JSON object. No text before or after it.
+2. Only include keys that need to change from current values.
+3. Apply relative changes against the CURRENT values provided.
+4. Clamp all values to valid ranges.
+5. When any item in a percentage group changes, redistribute the remaining items proportionally so the group still sums exactly to 100. Include ALL affected items in the output.
+6. Match specialty names case-insensitively; use the exact case from the provided list in your output.
+7. "GLOBAL" or "overall" or no specialty named = global object. Named specialties go in the specialties object.
+8. slotsPerDay must snap to nearest valid value (8,12,16,20,24,28).
+
+OUTPUT FORMAT (strict):
+{"global":{},"specialties":{"ExactSpecialtyName":{}},"summary":"2-3 sentence plain-English explanation","warnings":[]}`;
+}
+
+function buildUserContent(text,specialtyNames,currentGlobal){
+  return `CURRENT GLOBAL SETTINGS:\n${JSON.stringify(currentGlobal,null,2)}\n\nAVAILABLE SPECIALTY NAMES: ${specialtyNames.join(', ')}\n\nUSER SCENARIO:\n"${text}"`;
+}
+
+async function interpretScenario(isMidSim){
+  const textareaId=isMidSim?'midsim-scenario-text':'scenario-text';
+  const statusId=isMidSim?'midsim-nl-status':'nl-status';
+  const resultId=isMidSim?'midsim-nl-result':'nl-result';
+  const text=(document.getElementById(textareaId)||{}).value?.trim();
+  if(!text){setNlStatus(statusId,'Please describe your scenario first.','err');return;}
+  const apiKey=localStorage.getItem('pas_api_key');
+  if(!apiKey){openApiKeyModal();return;}
+  setNlStatus(statusId,'✨ Interpreting…','loading');
+  document.getElementById(resultId).style.display='none';
+  let specialtyNames,currentGlobal;
+  if(isMidSim){
+    specialtyNames=state.specialties.map(s=>s.name);
+    currentGlobal=state.globalSettings;
+  }else{
+    const n=parseInt(document.getElementById('w-num-specialties').value)||3;
+    specialtyNames=Array.from({length:n},(_,i)=>{
+      const el=document.getElementById(`sp-name-${i}`);
+      return(el&&el.value.trim())||SPECIALTY_DEFAULTS[i]||`Specialty ${i+1}`;
+    });
+    currentGlobal=defaultGlobal();
+  }
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,system:buildSystemPrompt(),messages:[{role:'user',content:buildUserContent(text,specialtyNames,currentGlobal)}]}),
+    });
+    if(!resp.ok){const e=await resp.json();throw new Error(e.error?.message||`HTTP ${resp.status}`);}
+    const data=await resp.json();
+    const raw=data.content[0].text;
+    const match=raw.match(/\{[\s\S]*\}/);
+    if(!match)throw new Error('No JSON returned — check API key and try again.');
+    const result=JSON.parse(match[0]);
+    setNlStatus(statusId,'','');
+    renderNlResult(result,resultId,isMidSim,currentGlobal);
+  }catch(err){setNlStatus(statusId,'❌ '+err.message,'err');}
+}
+
+function setNlStatus(id,msg,cls){
+  const el=document.getElementById(id);
+  if(el){el.textContent=msg;el.className='nl-status'+(cls?' '+cls:'');}
+}
+
+const NL_LABELS={demandVolume:'Demand Index',localPct:'Local %',regionalPct:'Regional %',nationalPct:'National %',internationalPct:'International %',commercialPct:'Commercial %',governmentPct:'Government %',selfPayPct:'Self-Pay %',providers:'Providers (FTE)',slotsPerDay:'Daily Template',newPatientTargetPct:'New Pt Target %',templateEfficiency:'Template Fill %',overtimeAllowed:'Overtime',topTierPct:'Top Tier %',priorityPct:'Priority %',commercialReservedPct:'Comm Reserved %',releaseUnusedSlots:'Release Unused',topTierCascades:'Top Tier Cascades',radiologyAllocation:'Radiology Slots',labCapacity:'Lab Capacity %',procedureSlots:'Procedure Slots'};
+
+function renderNlResult(result,containerId,isMidSim,currentGlobal){
+  const container=document.getElementById(containerId);
+  if(!container)return;
+  const fv=v=>typeof v==='boolean'?(v?'Yes':'No'):v;
+  let html='';
+  if(result.global&&Object.keys(result.global).length){
+    Object.entries(result.global).forEach(([k,v])=>{
+      const old=currentGlobal[k];
+      html+=`<div class="nl-change-row"><span class="nl-scope global">GLOBAL</span><span class="nl-param">${NL_LABELS[k]||k}</span><span class="nl-arrow">→</span>${old!==undefined?`<span class="nl-old">${fv(old)}</span>`:''}<span class="nl-new">${fv(v)}</span></div>`;
+    });
+  }
+  if(result.specialties){
+    Object.entries(result.specialties).forEach(([sp,changes])=>{
+      Object.entries(changes).forEach(([k,v])=>{
+        const old=currentGlobal[k];
+        html+=`<div class="nl-change-row"><span class="nl-scope specialty">${esc(sp)}</span><span class="nl-param">${NL_LABELS[k]||k}</span><span class="nl-arrow">→</span>${old!==undefined?`<span class="nl-old">${fv(old)}</span>`:''}<span class="nl-new">${fv(v)}</span></div>`;
+      });
+    });
+  }
+  const warns=(result.warnings||[]).map(w=>`<div class="nl-warn">⚠️ ${esc(w)}</div>`).join('');
+  const n=countChanges(result);
+  container.innerHTML=`<div class="nl-result animate-in">
+    <div class="nl-result-header">✅ Interpreted Changes <span style="font-size:.72rem;color:var(--gray);font-weight:400;margin-left:.25rem">${n} parameter${n!==1?'s':''} affected</span></div>
+    <div class="nl-result-body">
+      <div class="nl-summary">${esc(result.summary||'')}</div>
+      ${warns}
+      <div class="nl-changes">${html||'<span style="color:var(--gray);font-size:.82rem">No changes detected.</span>'}</div>
+    </div>
+    <div class="nl-apply-row">
+      <button class="btn btn-secondary btn-sm" onclick="dismissNlResult('${containerId}')">Dismiss</button>
+      <button class="btn btn-primary btn-sm" onclick="applyNlResult(${isMidSim})">Apply to Settings →</button>
+    </div>
+  </div>`;
+  container.style.display='block';
+  container._pendingResult=result;
+}
+
+function countChanges(r){
+  let n=Object.keys(r.global||{}).length;
+  Object.values(r.specialties||{}).forEach(sp=>n+=Object.keys(sp).length);
+  return n;
+}
+
+function dismissNlResult(id){const el=document.getElementById(id);if(el){el.style.display='none';el._pendingResult=null;}}
+
+function applyNlResult(isMidSim){
+  const cid=isMidSim?'midsim-nl-result':'nl-result';
+  const result=document.getElementById(cid)?._pendingResult;
+  if(!result)return;
+  if(isMidSim){
+    if(result.global)Object.assign(state.globalSettings,result.global);
+    if(result.specialties){
+      Object.entries(result.specialties).forEach(([sp,changes])=>{
+        const idx=state.specialties.findIndex(s=>s.name.toLowerCase()===sp.toLowerCase());
+        if(idx<0)return;
+        state.specialties[idx].useGlobal=false;
+        Object.assign(state.specialties[idx].overrides,changes);
+      });
+    }
+    closeMidSimScenario();
+    renderMain();
+    const lbl=document.getElementById('run-period-label');
+    if(lbl){const orig=lbl.textContent;lbl.textContent='✅ Scenario applied!';setTimeout(()=>lbl.textContent=orig,2200);}
+  }else{
+    window._pendingNlResult=result;
+    document.getElementById(cid).innerHTML=`<div class="nl-result"><div class="nl-result-header" style="background:#f0fdf4;border-color:#bbf7d0;color:var(--green)">✅ Will apply when simulation starts</div></div>`;
+    document.getElementById(cid).style.display='block';
+  }
+}
+
+// ══════════════════════════════════════════════ MID-SIM SCENARIO MODAL
+function openMidSimScenario(){
+  document.getElementById('midsim-modal').classList.add('active');
+  document.getElementById('midsim-scenario-text').value='';
+  const res=document.getElementById('midsim-nl-result');
+  res.innerHTML='';res.style.display='none';res._pendingResult=null;
+  setNlStatus('midsim-nl-status','','');
+}
+function closeMidSimScenario(){document.getElementById('midsim-modal').classList.remove('active');}
 
 buildSpecialtyInputs();
 </script>
