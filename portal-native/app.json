@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Mayo Patient Portal",
+    "slug": "mayo-patient-portal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#005EB8"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.mayoclinic.patientportal"
+    },
+    "android": {
+      "package": "org.mayoclinic.patientportal",
+      "adaptiveIcon": {
+        "backgroundColor": "#005EB8"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

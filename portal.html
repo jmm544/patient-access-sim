@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mayo Clinic Patient Portal</title>
+<style>
+:root{
+  --mayo-blue:#005EB8;--mayo-navy:#003865;--mayo-gold:#FFB81C;
+  --mayo-teal:#007C89;--mayo-light:#F0F4F8;--white:#FFFFFF;
+  --green:#1B7A3D;--green-bg:#E3F3E9;--yellow:#B7791F;--yellow-bg:#FCF3DC;
+  --red:#C0392B;--gray:#5A6B7B;--border:#DCE4EC;--text:#1F2C3A;
+  --radius:14px;--shadow:0 2px 10px rgba(0,56,101,.08);--shadow-lg:0 8px 30px rgba(0,56,101,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--mayo-light);color:var(--text);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-weight:700;line-height:1.25}
+button{font-family:inherit;cursor:pointer}
+a{color:var(--mayo-blue);text-decoration:none}
+a:hover{text-decoration:underline}
+.hidden{display:none!important}
+
+/* ───────── LOGIN ───────── */
+#loginView{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,var(--mayo-navy) 0%,var(--mayo-blue) 100%);padding:1.5rem}
+.login-card{background:var(--white);border-radius:18px;box-shadow:var(--shadow-lg);max-width:430px;width:100%;padding:2.4rem 2rem;animation:rise .5s ease}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.brand{display:flex;align-items:center;gap:.7rem;justify-content:center;margin-bottom:.4rem}
+.brand svg{width:42px;height:42px}
+.brand-text{font-size:1.5rem;font-weight:800;color:var(--mayo-navy);letter-spacing:-.5px}
+.login-sub{text-align:center;color:var(--gray);font-size:.95rem;margin-bottom:1.6rem}
+.demo-banner{background:linear-gradient(135deg,var(--mayo-blue),var(--mayo-teal));color:#fff;border-radius:var(--radius);padding:1.1rem 1.2rem;margin-bottom:1.6rem;text-align:center}
+.demo-banner p{font-size:.92rem;margin-bottom:.85rem;line-height:1.4}
+.demo-banner .btn-enter{background:#fff;color:var(--mayo-blue);border:none;padding:.7rem 1.4rem;border-radius:9px;font-weight:700;font-size:.95rem;width:100%;transition:transform .15s}
+.demo-banner .btn-enter:hover{transform:translateY(-2px)}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);margin-bottom:.35rem}
+.field input,.field select,.field textarea{width:100%;padding:.7rem .85rem;border:1.5px solid var(--border);border-radius:9px;font-size:.95rem;outline:none;transition:border-color .2s;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--mayo-blue)}
+.btn{border:none;border-radius:9px;font-weight:700;font-size:.95rem;padding:.75rem 1.2rem;transition:all .18s}
+.btn-primary{background:var(--mayo-blue);color:#fff;width:100%}
+.btn-primary:hover{background:var(--mayo-navy)}
+.btn-outline{background:#fff;color:var(--mayo-blue);border:1.5px solid var(--mayo-blue)}
+.btn-outline:hover{background:var(--mayo-light)}
+.login-links{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-top:1.3rem;font-size:.83rem}
+.or-divider{text-align:center;color:var(--gray);font-size:.8rem;margin:1.3rem 0;position:relative}
+.or-divider::before,.or-divider::after{content:"";position:absolute;top:50%;width:38%;height:1px;background:var(--border)}
+.or-divider::before{left:0}.or-divider::after{right:0}
+.login-footer{color:rgba(255,255,255,.85);font-size:.78rem;text-align:center;margin-top:1.6rem}
+
+/* ───────── APP SHELL ───────── */
+#appView{min-height:100%;display:flex;flex-direction:column;padding-bottom:72px}
+.topbar{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;box-shadow:var(--shadow)}
+.topbar .brand{margin:0;gap:.5rem}
+.topbar .brand svg{width:30px;height:30px}
+.topbar .brand-text{font-size:1.05rem}
+.topbar-right{display:flex;align-items:center;gap:.85rem}
+.welcome-name{font-size:.9rem;color:var(--gray);font-weight:600}
+.bell{position:relative;background:none;border:none;color:var(--mayo-navy);display:flex}
+.bell .dot{position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:var(--mayo-gold);border-radius:50%;border:2px solid #fff}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--mayo-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
+
+.view{display:none;padding:1rem;max-width:760px;margin:0 auto;width:100%;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem;margin-bottom:1rem}
+.card h3{font-size:1.02rem;color:var(--mayo-navy);margin-bottom:.7rem}
+.section-title{font-size:1.05rem;color:var(--mayo-navy);margin:1.3rem 0 .7rem}
+
+.hero{background:linear-gradient(135deg,var(--mayo-blue),var(--mayo-navy));color:#fff;border-radius:var(--radius);padding:1.4rem;box-shadow:var(--shadow-lg);margin-bottom:1.1rem}
+.hero h2{font-size:1.4rem;margin-bottom:.3rem}
+.hero .date{opacity:.9;font-size:.88rem}
+
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.4rem}
+.qcard{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem;text-align:left;border:none;transition:transform .15s,box-shadow .15s}
+.qcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.qcard .ic{width:42px;height:42px;border-radius:11px;background:var(--mayo-light);color:var(--mayo-blue);display:flex;align-items:center;justify-content:center;margin-bottom:.6rem}
+.qcard .t{font-weight:700;font-size:.92rem;color:var(--mayo-navy);display:block}
+.qcard .s{font-size:.78rem;color:var(--gray);margin-top:.15rem;display:block}
+
+.provider{display:flex;align-items:center;gap:.9rem}
+.provider .photo{width:54px;height:54px;border-radius:50%;background:var(--mayo-teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:1.1rem}
+.provider .pname{font-weight:700;color:var(--mayo-navy)}
+.provider .pspec{font-size:.83rem;color:var(--gray)}
+
+.list-item{display:flex;align-items:center;gap:.8rem;padding:.7rem 0;border-bottom:1px solid var(--border)}
+.list-item:last-child{border-bottom:none}
+.li-ic{width:36px;height:36px;border-radius:9px;background:var(--mayo-light);color:var(--mayo-blue);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.li-body{flex:1}.li-t{font-weight:600;font-size:.9rem}.li-s{font-size:.78rem;color:var(--gray)}
+
+.badge{display:inline-block;padding:.18rem .6rem;border-radius:999px;font-size:.72rem;font-weight:700}
+.badge.green{background:var(--green-bg);color:var(--green)}
+.badge.yellow{background:var(--yellow-bg);color:var(--yellow)}
+.badge.red{background:#FBE3E0;color:var(--red)}
+.badge.gray{background:#EAF0F5;color:var(--gray)}
+
+.tabs{display:flex;gap:.4rem;background:#fff;border-radius:11px;padding:.3rem;box-shadow:var(--shadow);margin-bottom:1rem;overflow-x:auto}
+.tab{flex:1;border:none;background:none;padding:.55rem .7rem;border-radius:8px;font-weight:600;font-size:.85rem;color:var(--gray);white-space:nowrap}
+.tab.active{background:var(--mayo-blue);color:#fff}
+
+.appt{border-left:4px solid var(--mayo-blue)}
+.appt .when{font-size:1.15rem;font-weight:800;color:var(--mayo-navy)}
+.appt .meta{font-size:.86rem;color:var(--gray);margin:.3rem 0}
+.appt-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+.btn-sm{padding:.45rem .8rem;font-size:.8rem;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--mayo-navy);font-weight:600}
+.btn-sm.primary{background:var(--mayo-blue);color:#fff;border-color:var(--mayo-blue)}
+.btn-sm.danger{color:var(--red);border-color:#F3C9C4}
+
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;color:var(--gray);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;padding:.5rem .4rem;border-bottom:2px solid var(--border)}
+td{padding:.65rem .4rem;border-bottom:1px solid var(--border)}
+
+.med{display:flex;justify-content:space-between;align-items:center;padding:.85rem;border:1px solid var(--border);border-radius:11px;margin-bottom:.7rem}
+.med .mname{font-weight:700;color:var(--mayo-navy)}
+.med .mmeta{font-size:.8rem;color:var(--gray)}
+
+.bill-hero{text-align:center;padding:1.6rem 1rem}
+.bill-hero .lbl{font-size:.82rem;color:var(--gray);text-transform:uppercase;letter-spacing:.05em}
+.bill-hero .amt{font-size:2.8rem;font-weight:800;color:var(--mayo-blue);margin:.3rem 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+
+.profile-card{text-align:center;padding:1.6rem 1rem}
+.profile-card .av{width:72px;height:72px;border-radius:50%;background:var(--mayo-blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;margin:0 auto .7rem}
+.acct-row{display:flex;justify-content:space-between;align-items:center;padding:.85rem 0;border-bottom:1px solid var(--border)}
+.acct-row:last-child{border-bottom:none}
+.switch{position:relative;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#C7D2DC;border-radius:999px;transition:.2s;cursor:pointer}
+.slider::before{content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked+.slider{background:var(--mayo-blue)}
+.switch input:checked+.slider::before{transform:translateX(20px)}
+
+.bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:40;background:#fff;border-top:1px solid var(--border);
+  display:flex;justify-content:space-around;padding:.4rem 0 .55rem;box-shadow:0 -2px 10px rgba(0,56,101,.06)}
+.navbtn{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:.15rem;color:var(--gray);font-size:.68rem;font-weight:600;flex:1;padding:.2rem 0}
+.navbtn.active{color:var(--mayo-blue)}
+.navbtn svg{width:23px;height:23px}
+
+.chat-fab{position:fixed;bottom:84px;right:18px;z-index:50;width:58px;height:58px;border-radius:50%;
+  background:var(--mayo-blue);color:#fff;border:none;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-lg);animation:pulse 2.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,94,184,.45)}70%{box-shadow:0 0 0 16px rgba(0,94,184,0)}100%{box-shadow:0 0 0 0 rgba(0,94,184,0)}}
+.chat-panel{position:fixed;bottom:0;right:0;z-index:60;width:100%;height:480px;max-height:80vh;background:#fff;
+  border-radius:18px 18px 0 0;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;transform:translateY(110%);transition:transform .3s ease}
+.chat-panel.open{transform:translateY(0)}
+.chat-head{background:var(--mayo-blue);color:#fff;padding:.9rem 1rem;display:flex;align-items:center;justify-content:space-between;border-radius:18px 18px 0 0}
+.chat-head .ct{font-weight:700}.chat-head .cs{font-size:.74rem;opacity:.85}
+.chat-close{background:none;border:none;color:#fff;font-size:1.4rem;line-height:1}
+.chat-body{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:.6rem;background:var(--mayo-light)}
+.msg{max-width:80%;padding:.6rem .85rem;border-radius:14px;font-size:.88rem;line-height:1.4}
+.msg.bot{background:#fff;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+.msg.user{background:var(--mayo-blue);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:.6rem 1rem 0}
+.chip{background:#fff;border:1.5px solid var(--mayo-blue);color:var(--mayo-blue);padding:.35rem .7rem;border-radius:999px;font-size:.78rem;font-weight:600}
+.chat-input{display:flex;gap:.5rem;padding:.7rem;border-top:1px solid var(--border)}
+.chat-input input{flex:1;border:1.5px solid var(--border);border-radius:999px;padding:.6rem .9rem;outline:none;font-size:.9rem;font-family:inherit}
+.chat-input input:focus{border-color:var(--mayo-blue)}
+.chat-send{background:var(--mayo-blue);color:#fff;border:none;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+.modal-overlay{position:fixed;inset:0;z-index:70;background:rgba(0,30,60,.55);display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:1.3rem;animation:rise .3s ease}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.modal-head h2{font-size:1.2rem;color:var(--mayo-navy)}
+.modal-close{background:none;border:none;font-size:1.6rem;color:var(--gray);line-height:1}
+.step-dots{display:flex;gap:.4rem;margin-bottom:1.1rem}
+.step-dots .d{flex:1;height:5px;border-radius:999px;background:var(--border)}
+.step-dots .d.active{background:var(--mayo-blue)}
+.success-box{text-align:center;padding:1.5rem .5rem}
+.success-box .check{width:64px;height:64px;border-radius:50%;background:var(--green-bg);color:var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem}
+
+#toastWrap{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:.5rem;align-items:center;pointer-events:none}
+.toast{background:var(--mayo-navy);color:#fff;padding:.7rem 1.1rem;border-radius:10px;font-size:.86rem;font-weight:600;box-shadow:var(--shadow-lg);animation:tin .3s ease;max-width:90vw}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+.toast.info{background:var(--mayo-blue)}
+@keyframes tin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+.muted{color:var(--gray);font-size:.85rem}
+.placeholder{text-align:center;padding:2rem 1rem;color:var(--gray)}
+.placeholder .pi{font-size:2rem;margin-bottom:.5rem}
+
+@media(min-width:760px){
+  .chat-panel{width:380px;right:18px;border-radius:18px;bottom:18px}
+  .modal-overlay{align-items:center}
+  .modal{border-radius:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="loginView">
+  <div class="login-card">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#005EB8"/><path d="M20 10h8v10h10v8H28v10h-8V28H10v-8h10V10z" fill="#fff"/></svg>
+      <span class="brand-text">Mayo Clinic</span>
+    </div>
+    <p class="login-sub">Patient Portal</p>
+
+    <div class="demo-banner">
+      <p><strong>Demo Mode</strong> — Click to enter as Sarah Johnson</p>
+      <button class="btn-enter" onclick="enterPortal()">Enter Portal →</button>
+    </div>
+
+    <div class="or-divider">or sign in</div>
+
+    <div class="field"><label>Email</label><input type="email" placeholder="you@example.com" autocomplete="off"></div>
+    <div class="field"><label>Password</label><input type="password" placeholder="••••••••"></div>
+    <button class="btn btn-primary" onclick="enterPortal()">Sign In</button>
+
+    <div class="login-links">
+      <a href="#" onclick="showToast('Password reset link sent','info');return false">Forgot Password?</a>
+      <a href="#" onclick="showToast('Sign-up is not available in demo','info');return false">New User? Sign Up</a>
+      <a href="#" onclick="showToast('Support: 1-800-MAYO-CLINIC','info');return false">Technical Support</a>
+    </div>
+  </div>
+  <p class="login-footer">© 2026 Mayo Clinic. All rights reserved. This is a simulation environment.</p>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="appView" class="hidden">
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#005EB8"/><path d="M20 10h8v10h10v8H28v10h-8V28H10v-8h10V10z" fill="#fff"/></svg>
+      <span class="brand-text">Mayo Clinic</span>
+    </div>
+    <div class="topbar-right">
+      <span class="welcome-name">Welcome, Sarah</span>
+      <button class="bell" onclick="showToast('You have 2 new notifications','info')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span class="dot"></span>
+      </button>
+      <div class="avatar">SJ</div>
+    </div>
+  </header>
+
+  <!-- HOME -->
+  <section id="home" class="view active">
+    <div class="hero">
+      <h2 id="greeting">Good morning, Sarah</h2>
+      <div class="date" id="heroDate"></div>
+    </div>
+    <div class="qgrid">
+      <button class="qcard" onclick="navTo('records')">
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+        <span class="t">View Records</span><span class="s">Labs, meds &amp; more</span>
+      </button>
+      <button class="qcard" onclick="navTo('billing')">
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
+        <span class="t">Pay Bill (<span id="qBill">$248.50</span>)</span><span class="s">Outstanding balance</span>
+      </button>
+      <button class="qcard" onclick="navTo('appointments')">
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+        <span class="t">Upcoming Appt</span><span class="s">Jun 15, 2:30 PM</span>
+      </button>
+      <button class="qcard" onclick="openRequest()">
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></div>
+        <span class="t">Request Appt</span><span class="s">New visit request</span>
+      </button>
+    </div>
+
+    <div class="section-title">Your Care Team</div>
+    <div class="card">
+      <div class="provider">
+        <div class="photo">MC</div>
+        <div>
+          <div class="pname">Dr. Michael Chen, MD</div>
+          <div class="pspec">Cardiology · Primary Provider</div>
+        </div>
+        <button class="btn-sm primary" style="margin-left:auto" onclick="sendProviderMessage()">Message</button>
+      </div>
+    </div>
+
+    <div class="section-title">Recent Activity</div>
+    <div class="card">
+      <div class="list-item"><div class="li-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div class="li-body"><div class="li-t">Lab Result: Complete Blood Count</div><div class="li-s">June 1, 2026 · Normal</div></div><span class="badge green">Normal</span></div>
+      <div class="list-item"><div class="li-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><div class="li-body"><div class="li-t">Visit Summary: Annual Physical</div><div class="li-s">May 2, 2026</div></div></div>
+      <div class="list-item"><div class="li-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="li-body"><div class="li-t">New Bill Issued</div><div class="li-s">April 28, 2026 · $248.50</div></div><span class="badge yellow">Due</span></div>
+    </div>
+
+    <div class="section-title">Health Reminders</div>
+    <div class="card">
+      <div class="list-item"><div class="li-ic">💉</div><div class="li-body"><div class="li-t">Annual Flu Shot</div><div class="li-s">Recommended this fall</div></div><button class="btn-sm" onclick="openRequest()">Schedule</button></div>
+      <div class="list-item"><div class="li-ic">🩺</div><div class="li-body"><div class="li-t">Annual Physical</div><div class="li-s">Last visit May 2, 2026</div></div><button class="btn-sm" onclick="openRequest()">Schedule</button></div>
+    </div>
+  </section>
+
+  <!-- APPOINTMENTS -->
+  <section id="appointments" class="view">
+    <h2 class="section-title" style="margin-top:.3rem">Appointments</h2>
+    <div class="tabs">
+      <button class="tab active" data-appttab="upcoming" onclick="switchApptTab('upcoming')">Upcoming</button>
+      <button class="tab" data-appttab="past" onclick="switchApptTab('past')">Past</button>
+    </div>
+
+    <div id="apptUpcoming">
+      <div class="card appt">
+        <div class="when">June 15, 2026 · 2:30 PM</div>
+        <div class="meta">Cardiology Consultation</div>
+        <div class="meta">👤 Dr. Michael Chen, MD</div>
+        <div class="meta">📍 Mayo Clinic Rochester</div>
+        <div id="waitNote" class="muted hidden" style="margin-top:.4rem"></div>
+        <div class="appt-actions">
+          <button class="btn-sm" onclick="showToast('Opening directions to Mayo Clinic Rochester','info')">Directions</button>
+          <button class="btn-sm" onclick="showToast('Added to your calendar','success')">Add to Calendar</button>
+          <button class="btn-sm danger" onclick="cancelAppointment()">Cancel Appointment</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="apptPast" class="hidden">
+      <div class="card appt" style="border-left-color:var(--gray)">
+        <div class="when">May 2, 2026 · 10:00 AM</div>
+        <div class="meta">Annual Physical</div>
+        <div class="meta">👤 Dr. Michael Chen, MD</div>
+        <div class="meta">📍 Mayo Clinic Rochester</div>
+        <div class="appt-actions">
+          <button class="btn-sm primary" onclick="showToast('Loading visit summary…','info')">View Summary</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="margin-top:.5rem" onclick="openRequest()">Request New Appointment</button>
+  </section>
+
+  <!-- RECORDS -->
+  <section id="records" class="view">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:.3rem 0 .2rem">
+      <h2 class="section-title" style="margin:0">Medical Records</h2>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn-sm" onclick="showToast('Preparing download…','info')">Download</button>
+        <button class="btn-sm" onclick="showToast('Share link copied','success')">Share</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-rectab="labs" onclick="switchRecTab('labs')">Labs</button>
+      <button class="tab" data-rectab="meds" onclick="switchRecTab('meds')">Medications</button>
+      <button class="tab" data-rectab="imaging" onclick="switchRecTab('imaging')">Imaging</button>
+      <button class="tab" data-rectab="notes" onclick="switchRecTab('notes')">Visit Notes</button>
+      <button class="tab" data-rectab="allergies" onclick="switchRecTab('allergies')">Allergies</button>
+      <button class="tab" data-rectab="immun" onclick="switchRecTab('immun')">Immunizations</button>
+    </div>
+
+    <div id="rec-labs" class="rec-panel card">
+      <table><thead><tr><th>Test</th><th>Date</th><th>Result</th><th>Status</th></tr></thead><tbody>
+        <tr><td>Complete Blood Count</td><td>Jun 1, 2026</td><td>Within range</td><td><span class="badge green">Normal</span></td></tr>
+        <tr><td>Lipid Panel</td><td>May 2, 2026</td><td>LDL elevated</td><td><span class="badge yellow">Review</span></td></tr>
+      </tbody></table>
+    </div>
+
+    <div id="rec-meds" class="rec-panel hidden">
+      <div class="med"><div><div class="mname">Lisinopril 10mg</div><div class="mmeta">Once daily · Dr. Michael Chen</div></div><button class="btn-sm primary" onclick="requestRefill('Lisinopril')">Refill</button></div>
+      <div class="med"><div><div class="mname">Metformin 500mg</div><div class="mmeta">Twice daily · Dr. Michael Chen</div></div><button class="btn-sm primary" onclick="requestRefill('Metformin')">Refill</button></div>
+      <div class="med"><div><div class="mname">Aspirin 81mg</div><div class="mmeta">Once daily · Dr. Michael Chen</div></div><button class="btn-sm primary" onclick="requestRefill('Aspirin')">Refill</button></div>
+    </div>
+
+    <div id="rec-imaging" class="rec-panel hidden"><div class="card placeholder"><div class="pi">🩻</div>No records available<div class="muted">Imaging results coming soon</div></div></div>
+    <div id="rec-notes" class="rec-panel hidden"><div class="card placeholder"><div class="pi">📝</div>No records available<div class="muted">Visit notes coming soon</div></div></div>
+
+    <div id="rec-allergies" class="rec-panel hidden card">
+      <div class="list-item"><div class="li-body"><div class="li-t">Penicillin</div><div class="li-s">Reaction: hives</div></div><span class="badge yellow">Moderate</span></div>
+      <div class="list-item"><div class="li-body"><div class="li-t">Sulfa drugs</div><div class="li-s">Reaction: rash</div></div><span class="badge gray">Mild</span></div>
+    </div>
+
+    <div id="rec-immun" class="rec-panel hidden card">
+      <div class="list-item"><div class="li-body"><div class="li-t">Influenza Vaccine</div><div class="li-s">October 2025</div></div><span class="badge green">Complete</span></div>
+      <div class="list-item"><div class="li-body"><div class="li-t">COVID-19 Booster</div><div class="li-s">August 2025</div></div><span class="badge green">Complete</span></div>
+    </div>
+  </section>
+
+  <!-- BILLING -->
+  <section id="billing" class="view">
+    <h2 class="section-title" style="margin-top:.3rem">Billing &amp; Payments</h2>
+    <div class="card bill-hero">
+      <div class="lbl">Outstanding Balance</div>
+      <div class="amt" id="billAmt">$248.50</div>
+      <div class="muted">Visit date: April 28, 2026</div>
+      <button class="btn btn-primary" style="margin-top:1rem" onclick="openPayForm()">Pay Now</button>
+    </div>
+
+    <div id="payForm" class="card hidden">
+      <h3>Payment Details</h3>
+      <div class="field"><label>Amount</label><input id="payAmount" type="text" value="$248.50"></div>
+      <div class="field"><label>Card Number</label><input type="text" placeholder="1234 5678 9012 3456"></div>
+      <div class="row2">
+        <div class="field"><label>Expiry</label><input type="text" placeholder="MM/YY"></div>
+        <div class="field"><label>CVV</label><input type="text" placeholder="123"></div>
+      </div>
+      <div class="field"><label>Billing ZIP</label><input type="text" placeholder="55905"></div>
+      <button class="btn btn-primary" onclick="processPayment()">Process Payment</button>
+    </div>
+
+    <div class="section-title">Payment History</div>
+    <div class="card">
+      <table><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>
+        <tr><td>Mar 14, 2026</td><td>Office Visit</td><td>$120.00</td></tr>
+        <tr><td>Feb 2, 2026</td><td>Lab Work</td><td>$85.50</td></tr>
+        <tr><td>Jan 9, 2026</td><td>Co-pay</td><td>$40.00</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="section-title">Insurance on File</div>
+    <div class="card">
+      <div class="provider"><div class="photo" style="background:var(--mayo-navy)">BC</div>
+        <div><div class="pname">BlueCross BlueShield PPO</div><div class="pspec">Member ID: ••••7841 · Active</div></div></div>
+    </div>
+    <a href="#" onclick="showToast('Financial assistance application opened','info');return false" style="display:block;margin-top:.4rem">Apply for Financial Assistance →</a>
+  </section>
+
+  <!-- ACCOUNT -->
+  <section id="account" class="view">
+    <h2 class="section-title" style="margin-top:.3rem">Account</h2>
+    <div class="card profile-card">
+      <div class="av">SJ</div>
+      <div class="pname" style="font-size:1.2rem;color:var(--mayo-navy)">Sarah Johnson</div>
+      <div class="muted">DOB: March 15, 1985 · MRN: MRN-2024-00847</div>
+      <div class="muted">sarah.johnson@email.com · (507) 555-0142</div>
+      <button class="btn btn-outline" style="margin-top:1rem;width:auto;padding:.5rem 1.4rem" onclick="showToast('Edit profile (demo)','info')">Edit Profile</button>
+    </div>
+
+    <div class="card">
+      <h3>Insurance Info</h3>
+      <div class="acct-row"><div><div class="li-t">BlueCross BlueShield PPO</div><div class="li-s">Member ID ••••7841</div></div><span class="badge green">Active</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Communication Preferences</h3>
+      <div class="acct-row"><span>Email notifications</span><label class="switch"><input type="checkbox" checked onchange="showToast('Preference saved','success')"><span class="slider"></span></label></div>
+      <div class="acct-row"><span>SMS reminders</span><label class="switch"><input type="checkbox" checked onchange="showToast('Preference saved','success')"><span class="slider"></span></label></div>
+      <div class="acct-row"><span>Marketing emails</span><label class="switch"><input type="checkbox" onchange="showToast('Preference saved','success')"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="card">
+      <h3>Linked Devices</h3>
+      <div class="acct-row"><div><div class="li-t">iPhone 15 · Mayo App</div><div class="li-s">Last active today</div></div><button class="btn-sm">Manage</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Privacy &amp; Security</h3>
+      <div class="acct-row"><span>Two-factor authentication</span><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
+      <div class="acct-row"><span>Change password</span><button class="btn-sm" onclick="showToast('Password reset link sent','info')">Update</button></div>
+    </div>
+
+    <button class="btn btn-outline" style="border-color:var(--red);color:var(--red)" onclick="signOut()">Sign Out</button>
+  </section>
+
+  <nav class="bottomnav">
+    <button class="navbtn active" data-nav="home" onclick="navTo('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>Home</button>
+    <button class="navbtn" data-nav="appointments" onclick="navTo('appointments')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Appts</button>
+    <button class="navbtn" data-nav="records" onclick="navTo('records')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Records</button>
+    <button class="navbtn" data-nav="billing" onclick="navTo('billing')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Billing</button>
+    <button class="navbtn" data-nav="account" onclick="navTo('account')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>Account</button>
+  </nav>
+</div>
+
+<button class="chat-fab hidden" id="chatFab" onclick="toggleChat()">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></svg>
+</button>
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-head"><div><div class="ct">Mayo Clinic Assistant</div><div class="cs">Virtual support · online</div></div><button class="chat-close" onclick="toggleChat()">×</button></div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chips" id="chatChips">
+    <button class="chip" onclick="quickReply('My Appointments')">My Appointments</button>
+    <button class="chip" onclick="quickReply('My Bills')">My Bills</button>
+    <button class="chip" onclick="quickReply('My Records')">My Records</button>
+    <button class="chip" onclick="quickReply('Talk to a Person')">Talk to a Person</button>
+  </div>
+  <div class="chat-input">
+    <input id="chatInput" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="requestModal">
+  <div class="modal">
+    <div class="modal-head"><h2>Request Appointment</h2><button class="modal-close" onclick="closeRequest()">×</button></div>
+    <div class="step-dots" id="stepDots"><div class="d active"></div><div class="d"></div><div class="d"></div><div class="d"></div></div>
+
+    <div class="req-step" data-step="1">
+      <div class="field"><label>Specialty</label><select id="reqSpecialty">
+        <option>Cardiology</option><option>Primary Care</option><option>Dermatology</option>
+        <option>Orthopedics</option><option>Neurology</option><option>Endocrinology</option><option>Gastroenterology</option>
+      </select></div>
+    </div>
+    <div class="req-step hidden" data-step="2">
+      <div class="field"><label>Reason for Visit</label><textarea id="reqReason" rows="4" placeholder="Briefly describe your symptoms or reason…"></textarea></div>
+    </div>
+    <div class="req-step hidden" data-step="3">
+      <div class="field"><label>Preferred Date 1</label><input id="reqD1" type="date"></div>
+      <div class="row2">
+        <div class="field"><label>Preferred Date 2</label><input id="reqD2" type="date"></div>
+        <div class="field"><label>Preferred Date 3</label><input id="reqD3" type="date"></div>
+      </div>
+      <div class="field"><label>Time Preference</label><select id="reqTime"><option>Morning</option><option>Afternoon</option><option>Evening</option><option>No preference</option></select></div>
+    </div>
+    <div class="req-step hidden" data-step="4">
+      <div class="field"><label>Provider Preference</label><select id="reqProvider"><option>Dr. Michael Chen, MD</option><option>No preference</option><option>First available</option></select></div>
+      <div class="field"><label>Location Preference</label><select id="reqLocation"><option>Mayo Clinic Rochester</option><option>Mayo Clinic Phoenix</option><option>Mayo Clinic Jacksonville</option><option>Telehealth</option></select></div>
+    </div>
+
+    <div id="reqSuccess" class="success-box hidden">
+      <div class="check"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <h3 style="color:var(--mayo-navy);margin-bottom:.4rem">Request Submitted</h3>
+      <p class="muted">Your request has been submitted. We'll contact you within 1 business day.</p>
+      <button class="btn btn-primary" style="margin-top:1.2rem" onclick="closeRequest()">Done</button>
+    </div>
+
+    <div id="reqNav" style="display:flex;gap:.6rem;margin-top:1.2rem">
+      <button class="btn btn-outline" id="reqBack" onclick="reqStep(-1)" style="display:none">Back</button>
+      <button class="btn btn-primary" id="reqNext" onclick="reqStep(1)">Next</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastWrap"></div>
+
+<script>
+/* ════════ TOAST ════════ */
+function showToast(msg,type='success'){
+  const w=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  t.className='toast '+type;t.textContent=msg;
+  w.appendChild(t);
+  setTimeout(()=>{t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),300)},3000);
+}
+
+/* ════════ NAV ════════ */
+function enterPortal(){
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('appView').classList.remove('hidden');
+  document.getElementById('chatFab').classList.remove('hidden');
+  setGreeting();
+  window.PortalSimBridge.trigger('portal_login',{patient:'Sarah Johnson',mrn:'MRN-2024-00847'});
+  showToast('Welcome back, Sarah','success');
+}
+function signOut(){
+  document.getElementById('appView').classList.add('hidden');
+  document.getElementById('chatFab').classList.add('hidden');
+  document.getElementById('chatPanel').classList.remove('open');
+  document.getElementById('loginView').classList.remove('hidden');
+}
+function navTo(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(view).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.nav===view));
+  window.scrollTo(0,0);
+  if(view==='records') window.PortalSimBridge.trigger('records_accessed',{section:'records'});
+}
+function setGreeting(){
+  const h=new Date().getHours();
+  const part=h<12?'morning':h<18?'afternoon':'evening';
+  document.getElementById('greeting').textContent='Good '+part+', Sarah';
+  document.getElementById('heroDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+/* ════════ APPOINTMENTS ════════ */
+function switchApptTab(tab){
+  document.querySelectorAll('[data-appttab]').forEach(b=>b.classList.toggle('active',b.dataset.appttab===tab));
+  document.getElementById('apptUpcoming').classList.toggle('hidden',tab!=='upcoming');
+  document.getElementById('apptPast').classList.toggle('hidden',tab!=='past');
+}
+function cancelAppointment(){
+  if(confirm('Cancel your June 15 appointment with Dr. Chen?')){
+    showToast('Appointment cancelled','success');
+    window.PortalSimBridge.trigger('appointment_cancelled',{date:'2026-06-15',provider:'Dr. Michael Chen'});
+  }
+}
+function sendProviderMessage(){
+  showToast('Secure message sent to Dr. Chen','success');
+  window.PortalSimBridge.trigger('provider_message_sent',{provider:'Dr. Michael Chen'});
+}
+
+/* ════════ RECORDS ════════ */
+function switchRecTab(tab){
+  document.querySelectorAll('[data-rectab]').forEach(b=>b.classList.toggle('active',b.dataset.rectab===tab));
+  document.querySelectorAll('.rec-panel').forEach(p=>p.classList.add('hidden'));
+  const map={labs:'rec-labs',meds:'rec-meds',imaging:'rec-imaging',notes:'rec-notes',allergies:'rec-allergies',immun:'rec-immun'};
+  document.getElementById(map[tab]).classList.remove('hidden');
+  window.PortalSimBridge.trigger('records_accessed',{section:tab});
+}
+function requestRefill(med){
+  showToast('Refill requested for '+med,'success');
+  window.PortalSimBridge.trigger('refill_requested',{medication:med});
+}
+
+/* ════════ BILLING ════════ */
+function openPayForm(){
+  document.getElementById('payForm').classList.remove('hidden');
+  document.getElementById('payForm').scrollIntoView({behavior:'smooth'});
+  window.PortalSimBridge.trigger('bill_payment_initiated',{amount:window.PortalSimBridge.getState('billAmount')});
+}
+function processPayment(){
+  const amt=document.getElementById('payAmount').value;
+  showToast('Payment of '+amt+' processed successfully','success');
+  document.getElementById('payForm').classList.add('hidden');
+  window.PortalSimBridge.trigger('bill_payment_completed',{amount:amt});
+}
+function updateBillDisplay(value){
+  const f='$'+Number(value).toFixed(2);
+  ['billAmt','qBill'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=f;});
+  const pa=document.getElementById('payAmount');if(pa)pa.value=f;
+}
+function updateWaitDisplay(days){
+  const n=document.getElementById('waitNote');if(!n)return;
+  if(days==null){n.classList.add('hidden');return;}
+  n.classList.remove('hidden');
+  n.textContent='ℹ️ Current scheduling wait time for new requests: ~'+days+' days';
+}
+
+/* ════════ REQUEST MODAL ════════ */
+let curStep=1;
+function openRequest(){curStep=1;renderStep();document.getElementById('reqSuccess').classList.add('hidden');document.getElementById('reqNav').style.display='flex';document.getElementById('requestModal').classList.add('open');}
+function closeRequest(){document.getElementById('requestModal').classList.remove('open');}
+function renderStep(){
+  document.querySelectorAll('.req-step').forEach(s=>s.classList.toggle('hidden',+s.dataset.step!==curStep));
+  document.querySelectorAll('#stepDots .d').forEach((d,i)=>d.classList.toggle('active',i<curStep));
+  document.getElementById('reqBack').style.display=curStep>1?'block':'none';
+  document.getElementById('reqNext').textContent=curStep===4?'Submit Request':'Next';
+}
+function reqStep(dir){
+  if(dir===1&&curStep===4){submitRequest();return;}
+  curStep=Math.max(1,Math.min(4,curStep+dir));renderStep();
+}
+function submitRequest(){
+  const specialty=document.getElementById('reqSpecialty').value;
+  const reason=document.getElementById('reqReason').value;
+  document.querySelectorAll('.req-step').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('reqNav').style.display='none';
+  document.getElementById('stepDots').querySelectorAll('.d').forEach(d=>d.classList.add('active'));
+  document.getElementById('reqSuccess').classList.remove('hidden');
+  window.PortalSimBridge.trigger('appointment_requested',{specialty,reason,provider:document.getElementById('reqProvider').value,location:document.getElementById('reqLocation').value});
+}
+
+/* ════════ CHATBOT ════════ */
+function toggleChat(){
+  const p=document.getElementById('chatPanel');
+  p.classList.toggle('open');
+  if(p.classList.contains('open')&&!document.getElementById('chatBody').dataset.init){
+    botSay("Hello! I'm your Mayo Clinic virtual assistant. I can help you navigate the portal, find information about your care, or connect you with support. How can I help you today?");
+    document.getElementById('chatBody').dataset.init='1';
+  }
+}
+function botSay(text){addMsg(text,'bot');}
+function addMsg(text,who){
+  const b=document.getElementById('chatBody');
+  const m=document.createElement('div');m.className='msg '+who;m.textContent=text;
+  b.appendChild(m);b.scrollTop=b.scrollHeight;
+}
+function quickReply(text){addMsg(text,'user');respond(text);}
+function sendChat(){
+  const i=document.getElementById('chatInput');
+  const text=i.value.trim();if(!text)return;
+  i.value='';addMsg(text,'user');respond(text);
+}
+function respond(text){
+  const q=text.toLowerCase();
+  window.PortalSimBridge.trigger('chatbot_interaction',{message:text});
+  let r;
+  if(q.includes('talk to a person')||q.includes('human')||q.includes('representative'))
+    r="I'll connect you with a patient services representative. Our support hours are Monday–Friday 7am–7pm CT. Phone: 1-800-MAYO-CLINIC";
+  else if(q.includes('appointment')||q.includes('appt')||q.includes('schedule'))
+    r="You have an upcoming appointment with Dr. Michael Chen on June 15, 2026 at 2:30 PM. Would you like to reschedule or get directions?";
+  else if(q.includes('bill')||q.includes('pay')||q.includes('balance'))
+    r="Your current outstanding balance is $248.50 from your April 28 visit. I can direct you to the billing section to pay online.";
+  else if(q.includes('medication')||q.includes('prescription')||q.includes('refill'))
+    r="You have 3 active medications on file. You can request refills through the Medical Records → Medications section.";
+  else if(q.includes('records')||q.includes('lab')||q.includes('result'))
+    r="Your most recent lab work was a Complete Blood Count on June 1, 2026, which came back Normal. You can view full details in the Medical Records section.";
+  else if(q.includes('doctor')||q.includes('provider')||q.includes('chen'))
+    r="Dr. Michael Chen is your primary cardiologist. He's available for secure messaging through the portal.";
+  else
+    r="I can help you with appointments, billing, medical records, medications, and more. You can also reach our support line at 1-800-MAYO-CLINIC.";
+  setTimeout(()=>botSay(r),450);
+}
+
+/* ════════ SIM BRIDGE ════════ */
+window.PortalSimBridge = {
+  _state: {
+    appointmentWaitDays: null,
+    availableSlots: null,
+    billAmount: 248.50,
+    patientStatus: 'active',
+  },
+  _listeners: {},
+  setState(key, value) {
+    this._state[key] = value;
+    this._emit('stateChange', { key, value });
+    if (key === 'billAmount') updateBillDisplay(value);
+    if (key === 'appointmentWaitDays') updateWaitDisplay(value);
+  },
+  getState(key) { return this._state[key]; },
+  on(event, handler) {
+    if (!this._listeners[event]) this._listeners[event] = [];
+    this._listeners[event].push(handler);
+  },
+  _emit(event, data) {
+    (this._listeners[event] || []).forEach(h => h(data));
+    try { window.parent.postMessage({ portalEvent: event, data }, '*'); } catch(e) {}
+    console.log('[PortalSimBridge]', event, data);
+  },
+  trigger(event, data) { this._emit(event, { ...data, timestamp: new Date().toISOString() }); }
+};
+
+/* listen for commands pushed from admin sim (cross-frame) */
+window.addEventListener('message',(e)=>{
+  if(e.data&&e.data.simCommand){
+    const{command,key,value}=e.data;
+    if(command==='setState'&&key!=null) window.PortalSimBridge.setState(key,value);
+  }
+});
+</script>
+</body>
+</html>
